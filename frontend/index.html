@@ -1,0 +1,1414 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ecotrentino CRM</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            eco: { 50:'#f0fdf4',100:'#dcfce7',200:'#bbf7d0',300:'#86efac',400:'#4ade80',
+                   500:'#22c55e',600:'#16a34a',700:'#15803d',800:'#166534',900:'#14532d' }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    [x-cloak]{display:none}
+    .view{display:none}
+    .view.active{display:block}
+    .kanban-col{min-height:160px}
+    .kanban-card{cursor:grab;user-select:none}
+    .kanban-card:active{cursor:grabbing}
+    .drag-over{outline:2px dashed #16a34a;outline-offset:2px}
+    .badge{display:inline-flex;align-items:center;padding:2px 10px;border-radius:9999px;font-size:.75rem;font-weight:600}
+    ::-webkit-scrollbar{width:6px;height:6px}
+    ::-webkit-scrollbar-track{background:#f1f5f9}
+    ::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:3px}
+    .modal-enter{animation:fadeIn .15s ease}
+    @keyframes fadeIn{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:scale(1)}}
+    .toast-anim{animation:slideUp .25s ease}
+    @keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans antialiased">
+
+<!-- ═══════════════════ LAYOUT ═══════════════════ -->
+<div class="flex h-screen overflow-hidden">
+
+  <!-- SIDEBAR -->
+  <aside id="sidebar" class="w-60 bg-eco-900 text-white flex flex-col flex-shrink-0 shadow-xl">
+    <!-- Logo -->
+    <div class="px-5 py-5 border-b border-eco-800">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 bg-eco-500 rounded-lg flex items-center justify-center font-bold text-white text-lg">E</div>
+        <div>
+          <div class="font-bold text-sm leading-tight">Ecotrentino</div>
+          <div class="text-eco-300 text-xs">CRM B2B</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Nav -->
+    <nav class="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+      <button onclick="navigate('dashboard')" data-view="dashboard" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-eco-200 hover:bg-eco-800 hover:text-white transition-colors text-sm font-medium">
+        <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+        Cruscotto
+      </button>
+      <button onclick="navigate('aziende')" data-view="aziende" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-eco-200 hover:bg-eco-800 hover:text-white transition-colors text-sm font-medium">
+        <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+        Aziende
+      </button>
+      <button onclick="navigate('contatti')" data-view="contatti" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-eco-200 hover:bg-eco-800 hover:text-white transition-colors text-sm font-medium">
+        <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        Contatti
+      </button>
+      <button onclick="navigate('pipeline')" data-view="pipeline" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-eco-200 hover:bg-eco-800 hover:text-white transition-colors text-sm font-medium">
+        <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"/></svg>
+        Pipeline
+      </button>
+      <button onclick="navigate('attivita')" data-view="attivita" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-eco-200 hover:bg-eco-800 hover:text-white transition-colors text-sm font-medium">
+        <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+        Attività
+      </button>
+      <div class="border-t border-eco-800 my-2"></div>
+      <button onclick="navigate('import')" data-view="import" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-eco-200 hover:bg-eco-800 hover:text-white transition-colors text-sm font-medium">
+        <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+        Import CSV
+      </button>
+    </nav>
+
+    <!-- Footer -->
+    <div class="px-5 py-3 border-t border-eco-800 text-eco-400 text-xs">v1.0 · Filtrazione Industriale</div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="flex-1 flex flex-col overflow-hidden">
+
+    <!-- TOPBAR -->
+    <header class="bg-white border-b border-slate-200 px-6 py-3 flex items-center gap-4 flex-shrink-0">
+      <div class="flex-1 relative">
+        <svg class="absolute left-3 top-2.5 w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0"/></svg>
+        <input id="global-search" type="text" placeholder="Ricerca globale per ragione sociale…"
+          class="w-full max-w-md pl-9 pr-4 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-eco-500 bg-slate-50"
+          oninput="onGlobalSearch(this.value)" autocomplete="off" />
+        <div id="search-results" class="hidden absolute top-full left-0 mt-1 w-full max-w-md bg-white border border-slate-200 rounded-lg shadow-lg z-50 max-h-80 overflow-y-auto"></div>
+      </div>
+      <div id="breadcrumb" class="text-sm text-slate-500 font-medium"></div>
+    </header>
+
+    <!-- CONTENT -->
+    <main class="flex-1 overflow-y-auto p-6">
+
+      <!-- ── DASHBOARD ── -->
+      <div id="view-dashboard" class="view">
+        <h1 class="text-xl font-bold text-slate-800 mb-5">Cruscotto</h1>
+
+        <!-- KPI Cards -->
+        <div class="grid grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
+          <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-5">
+            <div class="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Totale Aziende</div>
+            <div id="kpi-aziende" class="text-3xl font-bold text-slate-800">—</div>
+            <div class="text-xs text-slate-400 mt-1">nel database</div>
+          </div>
+          <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-5">
+            <div class="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Clienti Attivi</div>
+            <div id="kpi-clienti" class="text-3xl font-bold text-eco-600">—</div>
+            <div class="text-xs text-slate-400 mt-1">opportunità chiuse</div>
+          </div>
+          <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-5">
+            <div class="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Opp. In Corso</div>
+            <div id="kpi-opp" class="text-3xl font-bold text-amber-600">—</div>
+            <div class="text-xs text-slate-400 mt-1">pipeline attiva</div>
+          </div>
+          <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-5">
+            <div class="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Valore Pipeline</div>
+            <div id="kpi-valore" class="text-3xl font-bold text-blue-600">—</div>
+            <div class="text-xs text-slate-400 mt-1">stimato totale</div>
+          </div>
+        </div>
+
+        <!-- Charts + Activity -->
+        <div class="grid grid-cols-1 xl:grid-cols-5 gap-6">
+          <div class="xl:col-span-3 bg-white rounded-xl shadow-sm border border-slate-100 p-5">
+            <h2 class="text-sm font-semibold text-slate-600 mb-4">Distribuzione Opportunità per Stato</h2>
+            <div class="h-56"><canvas id="opp-chart"></canvas></div>
+          </div>
+          <div class="xl:col-span-2 bg-white rounded-xl shadow-sm border border-slate-100 p-5">
+            <h2 class="text-sm font-semibold text-slate-600 mb-3">Attività Recenti</h2>
+            <div id="attivita-recenti" class="space-y-2 overflow-y-auto max-h-56"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── AZIENDE ── -->
+      <div id="view-aziende" class="view">
+        <div class="flex items-center justify-between mb-5">
+          <h1 class="text-xl font-bold text-slate-800">Aziende</h1>
+          <button onclick="openAziendaModal()" class="btn-primary flex items-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            Nuova Azienda
+          </button>
+        </div>
+
+        <!-- Filters -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-4 mb-4 flex flex-wrap gap-3 items-end">
+          <div class="flex-1 min-w-48">
+            <label class="label">Ricerca</label>
+            <input id="az-search" type="text" placeholder="Ragione sociale…" class="input" oninput="applyAzFilter()" />
+          </div>
+          <div class="min-w-36">
+            <label class="label">Provincia</label>
+            <select id="az-provincia" class="input" onchange="applyAzFilter()">
+              <option value="">Tutte</option>
+            </select>
+          </div>
+          <div class="min-w-40">
+            <label class="label">Regione</label>
+            <select id="az-regione" class="input" onchange="applyAzFilter()">
+              <option value="">Tutte</option>
+            </select>
+          </div>
+          <div class="min-w-40">
+            <label class="label">Tipo</label>
+            <select id="az-tipo" class="input" onchange="applyAzFilter()">
+              <option value="">Tutti</option>
+              <option value="metalli">Metalli</option>
+              <option value="meccanica">Meccanica</option>
+              <option value="legno">Legno</option>
+              <option value="chimica">Chimica</option>
+              <option value="navale">Navale</option>
+              <option value="militare">Militare</option>
+              <option value="alimentare">Alimentare</option>
+              <option value="plastica">Plastica</option>
+              <option value="recycling">Recycling</option>
+              <option value="biomassa">Biomassa</option>
+              <option value="essiccazione">Essiccazione</option>
+              <option value="manutenzione">Manutenzione</option>
+              <option value="impiantista">Impiantista</option>
+              <option value="biogas">Biogas</option>
+              <option value="edilizia">Edilizia</option>
+              <option value="impiantista_industriale">Imp. Industriale</option>
+              <option value="engineering">Engineering</option>
+              <option value="rivenditore">Rivenditore</option>
+              <option value="altro">Altro</option>
+            </select>
+          </div>
+          <button onclick="resetAzFilter()" class="btn-ghost">Reset</button>
+        </div>
+
+        <!-- Table -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-slate-100 text-sm">
+              <thead class="bg-slate-50">
+                <tr>
+                  <th class="th w-10 text-center"><input type="checkbox" id="az-select-all" class="cursor-pointer rounded" onchange="toggleSelectAllAziende(this.checked)"></th>
+                  <th class="th">Ragione Sociale</th>
+                  <th class="th">P.IVA</th>
+                  <th class="th">Città</th>
+                  <th class="th">Prov</th>
+                  <th class="th">Tipo</th>
+                  <th class="th">Telefono</th>
+                  <th class="th">Email</th>
+                  <th class="th">Web</th>
+                  <th class="th">Contatti</th>
+                  <th class="th">Opp.</th>
+                  <th class="th text-right">Azioni</th>
+                </tr>
+              </thead>
+              <tbody id="aziende-tbody" class="divide-y divide-slate-50"></tbody>
+            </table>
+          </div>
+          <div id="aziende-empty" class="hidden py-12 text-center text-slate-400 text-sm">Nessuna azienda trovata</div>
+          <div id="aziende-count" class="px-4 py-2 text-xs text-slate-400 border-t border-slate-100"></div>
+        </div>
+
+        <!-- Batch action bar -->
+        <div id="az-batch-bar" class="hidden fixed bottom-0 inset-x-0 z-40 bg-white border-t border-slate-200 shadow-xl px-6 py-3 flex items-center justify-between">
+          <span class="text-sm text-slate-600 font-medium"><span id="az-batch-n">0</span> aziende selezionate</span>
+          <button onclick="confirmBatchDeleteAziende()" class="bg-red-600 hover:bg-red-700 active:bg-red-800 text-white text-sm font-semibold px-5 py-2 rounded-lg transition-colors flex items-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+            Elimina selezionate (<span id="az-batch-n2">0</span>)
+          </button>
+        </div>
+      </div>
+
+      <!-- ── CONTATTI ── -->
+      <div id="view-contatti" class="view">
+        <div class="flex items-center justify-between mb-5">
+          <h1 class="text-xl font-bold text-slate-800">Contatti</h1>
+          <button onclick="openContattoModal()" class="btn-primary flex items-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            Nuovo Contatto
+          </button>
+        </div>
+
+        <!-- Filters -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-4 mb-4 flex flex-wrap gap-3 items-end">
+          <div class="flex-1 min-w-48">
+            <label class="label">Ricerca</label>
+            <input id="ct-search" type="text" placeholder="Nome, cognome, email…" class="input" oninput="applyCtFilter()" />
+          </div>
+          <div class="flex-1 min-w-48">
+            <label class="label">Azienda</label>
+            <select id="ct-azienda" class="input" onchange="applyCtFilter()">
+              <option value="">Tutte</option>
+            </select>
+          </div>
+          <button onclick="resetCtFilter()" class="btn-ghost">Reset</button>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-slate-100 text-sm">
+              <thead class="bg-slate-50">
+                <tr>
+                  <th class="th">Nominativo</th>
+                  <th class="th">Ruolo</th>
+                  <th class="th">Azienda</th>
+                  <th class="th">Telefono</th>
+                  <th class="th">Email</th>
+                  <th class="th text-right">Azioni</th>
+                </tr>
+              </thead>
+              <tbody id="contatti-tbody" class="divide-y divide-slate-50"></tbody>
+            </table>
+          </div>
+          <div id="contatti-empty" class="hidden py-12 text-center text-slate-400 text-sm">Nessun contatto trovato</div>
+        </div>
+      </div>
+
+      <!-- ── PIPELINE (KANBAN) ── -->
+      <div id="view-pipeline" class="view">
+        <div class="flex items-center justify-between mb-5">
+          <h1 class="text-xl font-bold text-slate-800">Pipeline Commerciale</h1>
+          <button onclick="openOppModal()" class="btn-primary flex items-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            Nuova Opportunità
+          </button>
+        </div>
+        <div id="pipeline-board" class="flex gap-4 overflow-x-auto pb-4 min-h-96"></div>
+      </div>
+
+      <!-- ── ATTIVITÀ ── -->
+      <div id="view-attivita" class="view">
+        <div class="flex items-center justify-between mb-5">
+          <h1 class="text-xl font-bold text-slate-800">Attività</h1>
+          <button onclick="openAttivitaModal()" class="btn-primary flex items-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            Nuova Attività
+          </button>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-4 mb-4 flex flex-wrap gap-3 items-end">
+          <div class="min-w-36">
+            <label class="label">Tipo</label>
+            <select id="att-tipo" class="input" onchange="loadAttivita()">
+              <option value="">Tutti</option>
+              <option value="chiamata">Chiamata</option>
+              <option value="email">Email</option>
+              <option value="visita">Visita</option>
+              <option value="offerta">Offerta</option>
+            </select>
+          </div>
+          <div class="flex-1 min-w-48">
+            <label class="label">Azienda</label>
+            <select id="att-azienda" class="input" onchange="loadAttivita()">
+              <option value="">Tutte</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-slate-100 text-sm">
+              <thead class="bg-slate-50">
+                <tr>
+                  <th class="th">Data</th>
+                  <th class="th">Tipo</th>
+                  <th class="th">Azienda</th>
+                  <th class="th">Opportunità</th>
+                  <th class="th">Descrizione</th>
+                  <th class="th">Esito</th>
+                  <th class="th text-right">Azioni</th>
+                </tr>
+              </thead>
+              <tbody id="attivita-tbody" class="divide-y divide-slate-50"></tbody>
+            </table>
+          </div>
+          <div id="attivita-empty" class="hidden py-12 text-center text-slate-400 text-sm">Nessuna attività registrata</div>
+        </div>
+      </div>
+
+      <!-- ── IMPORT CSV ── -->
+      <div id="view-import" class="view">
+        <h1 class="text-xl font-bold text-slate-800 mb-5">Import CSV / Excel</h1>
+        <div class="max-w-3xl">
+
+          <!-- Step 1: Upload -->
+          <div id="import-step1" class="bg-white rounded-xl shadow-sm border border-slate-100 p-6 mb-4">
+            <h2 class="font-semibold text-slate-700 mb-3 flex items-center gap-2">
+              <span class="w-6 h-6 bg-eco-600 text-white rounded-full text-xs flex items-center justify-center font-bold">1</span>
+              Carica il file CSV
+            </h2>
+            <p class="text-sm text-slate-500 mb-4">Importa aziende da un file CSV esportato da Excel. Assicurati che la prima riga contenga le intestazioni delle colonne.</p>
+            <div id="drop-zone" class="border-2 border-dashed border-slate-300 rounded-lg p-10 text-center hover:border-eco-500 transition-colors cursor-pointer" onclick="document.getElementById('csv-file-input').click()" ondragover="event.preventDefault();this.classList.add('border-eco-500')" ondragleave="this.classList.remove('border-eco-500')" ondrop="handleFileDrop(event)">
+              <svg class="w-10 h-10 mx-auto text-slate-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+              <p class="text-sm text-slate-500">Trascina qui il file CSV o <span class="text-eco-600 font-medium">clicca per selezionare</span></p>
+              <p class="text-xs text-slate-400 mt-1">Supportati: .csv, .txt (separatore automatico)</p>
+              <input id="csv-file-input" type="file" accept=".csv,.txt" class="hidden" onchange="handleFileSelect(event)" />
+            </div>
+            <div id="file-selected" class="hidden mt-3 flex items-center gap-2 text-sm text-eco-700 font-medium">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0"/></svg>
+              <span id="file-name"></span>
+            </div>
+          </div>
+
+          <!-- Step 2: Mapping (hidden until file loaded) -->
+          <div id="import-step2" class="hidden bg-white rounded-xl shadow-sm border border-slate-100 p-6 mb-4">
+            <h2 class="font-semibold text-slate-700 mb-3 flex items-center gap-2">
+              <span class="w-6 h-6 bg-eco-600 text-white rounded-full text-xs flex items-center justify-center font-bold">2</span>
+              Mappa le colonne
+            </h2>
+            <p class="text-sm text-slate-500 mb-4">Associa le colonne del tuo CSV ai campi del CRM. <span class="text-eco-700 font-medium">Ragione Sociale è obbligatorio.</span></p>
+
+            <!-- Preview table -->
+            <div id="csv-preview" class="mb-4 overflow-x-auto"></div>
+
+            <!-- Mapping table -->
+            <table class="w-full text-sm mb-4">
+              <thead><tr class="border-b border-slate-200"><th class="text-left py-2 text-slate-500 font-medium">Campo CRM</th><th class="text-left py-2 text-slate-500 font-medium">Colonna CSV</th></tr></thead>
+              <tbody id="mapping-tbody"></tbody>
+            </table>
+
+            <button onclick="executeImport()" class="btn-primary">Importa Aziende</button>
+          </div>
+
+          <!-- Step 3: Result -->
+          <div id="import-result" class="hidden bg-white rounded-xl shadow-sm border border-slate-100 p-6">
+            <h2 class="font-semibold text-slate-700 mb-3 flex items-center gap-2">
+              <span class="w-6 h-6 bg-eco-600 text-white rounded-full text-xs flex items-center justify-center font-bold">3</span>
+              Risultato Import
+            </h2>
+            <div id="import-result-content"></div>
+            <button onclick="resetImport()" class="btn-ghost mt-3">Nuovo Import</button>
+          </div>
+        </div>
+      </div>
+
+    </main><!-- end content -->
+  </div><!-- end main -->
+</div><!-- end layout -->
+
+<!-- ═══════════════════ MODAL OVERLAY ═══════════════════ -->
+<div id="modal-overlay" class="hidden fixed inset-0 bg-black/40 z-40 flex items-center justify-center p-4" onclick="closeModal(event)">
+  <div id="modal-box" class="modal-enter bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-screen overflow-y-auto" onclick="event.stopPropagation()">
+    <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+      <h2 id="modal-title" class="text-lg font-semibold text-slate-800"></h2>
+      <button onclick="hideModal()" class="text-slate-400 hover:text-slate-600 transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div id="modal-body" class="px-6 py-5"></div>
+    <div class="flex justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50 rounded-b-2xl">
+      <button onclick="hideModal()" class="btn-ghost">Annulla</button>
+      <button id="modal-save-btn" onclick="saveModal()" class="btn-primary">Salva</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ DELETE CONFIRM ═══════════════════ -->
+<div id="confirm-overlay" class="hidden fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+  <div class="modal-enter bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+    <div class="text-lg font-semibold text-slate-800 mb-2">Conferma eliminazione</div>
+    <div id="confirm-msg" class="text-sm text-slate-500 mb-5"></div>
+    <div class="flex justify-end gap-3">
+      <button onclick="hideConfirm()" class="btn-ghost">Annulla</button>
+      <button id="confirm-ok" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-lg transition-colors">Elimina</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ TOAST CONTAINER ═══════════════════ -->
+<div id="toast-container" class="fixed bottom-5 right-5 space-y-2 z-[60]"></div>
+
+<!-- ═══════════════════ TAILWIND COMPONENT STYLES ═══════════════════ -->
+<style>
+  .btn-primary{padding:.5rem 1.1rem;background-color:#16a34a;color:white;font-size:.875rem;font-weight:600;border-radius:.5rem;transition:background-color .15s;cursor:pointer}
+  .btn-primary:hover{background-color:#15803d}
+  .btn-ghost{padding:.5rem 1.1rem;color:#475569;font-size:.875rem;font-weight:500;border-radius:.5rem;border:1px solid #e2e8f0;background:white;transition:all .15s;cursor:pointer}
+  .btn-ghost:hover{background:#f8fafc;border-color:#cbd5e1}
+  .input{width:100%;border:1px solid #e2e8f0;border-radius:.5rem;padding:.45rem .75rem;font-size:.875rem;background:white;outline:none;transition:border .15s}
+  .input:focus{border-color:#16a34a;box-shadow:0 0 0 3px rgba(22,163,74,.15)}
+  .label{display:block;font-size:.75rem;font-weight:600;color:#64748b;margin-bottom:.3rem;text-transform:uppercase;letter-spacing:.04em}
+  .th{padding:.6rem 1rem;text-align:left;font-size:.75rem;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap}
+  .td{padding:.7rem 1rem;color:#334155;vertical-align:middle}
+  .tr-row:hover{background:#f8fafc}
+  .nav-item.active{background-color:#166534;color:white}
+</style>
+
+<!-- ═══════════════════ JAVASCRIPT ═══════════════════ -->
+<script>
+// ═══════════════ CONFIG ═══════════════
+const STATI = ['freddo','contattato','trattativa','offerta','cliente','perso'];
+const STATO_COLORS = {
+  freddo:'bg-slate-100 text-slate-600',
+  contattato:'bg-blue-100 text-blue-700',
+  trattativa:'bg-amber-100 text-amber-700',
+  offerta:'bg-orange-100 text-orange-700',
+  cliente:'bg-eco-100 text-eco-700',
+  perso:'bg-red-100 text-red-600'
+};
+const TIPO_AZIENDA_COLORS = {
+  metalli:                'bg-slate-200 text-slate-700',
+  meccanica:              'bg-blue-100 text-blue-700',
+  legno:                  'bg-amber-100 text-amber-800',
+  chimica:                'bg-cyan-100 text-cyan-700',
+  navale:                 'bg-sky-100 text-sky-700',
+  militare:               'bg-gray-200 text-gray-700',
+  alimentare:             'bg-lime-100 text-lime-700',
+  plastica:               'bg-violet-100 text-violet-700',
+  recycling:              'bg-emerald-100 text-emerald-700',
+  biomassa:               'bg-green-100 text-green-700',
+  essiccazione:           'bg-orange-100 text-orange-700',
+  manutenzione:           'bg-yellow-100 text-yellow-700',
+  impiantista:            'bg-blue-100 text-blue-700',
+  biogas:                 'bg-teal-100 text-teal-700',
+  edilizia:               'bg-stone-100 text-stone-700',
+  impiantista_industriale:'bg-indigo-100 text-indigo-700',
+  engineering:            'bg-purple-100 text-purple-700',
+  rivenditore:            'bg-amber-100 text-amber-700',
+  altro:                  'bg-slate-100 text-slate-600',
+};
+const TIPO_LABELS = {
+  metalli:'Metalli', meccanica:'Meccanica', legno:'Legno', chimica:'Chimica',
+  navale:'Navale', militare:'Militare', alimentare:'Alimentare', plastica:'Plastica',
+  recycling:'Recycling', biomassa:'Biomassa', essiccazione:'Essiccazione',
+  manutenzione:'Manutenzione', impiantista:'Impiantista', biogas:'Biogas',
+  edilizia:'Edilizia', impiantista_industriale:'Imp. Industriale',
+  engineering:'Engineering', rivenditore:'Rivenditore', altro:'Altro',
+};
+const TIPO_ATT_ICONS = {
+  chiamata:'📞', email:'✉️', visita:'🏢', offerta:'📄'
+};
+
+let oppChart = null;
+let csvFile = null;
+let csvColumns = [];
+let modalCtx = {};  // { type, id, onSave }
+let confirmFn = null;
+
+// ═══════════════ API HELPERS ═══════════════
+const API = {
+  async req(method, url, body){
+    const opts = { method, headers:{} };
+    if(body && !(body instanceof FormData)){
+      opts.headers['Content-Type']='application/json';
+      opts.body = JSON.stringify(body);
+    } else if(body){
+      opts.body = body;
+    }
+    const r = await fetch(url, opts);
+    if(!r.ok){
+      let msg;
+      try{ msg = (await r.json()).detail || r.statusText; }
+      catch{ msg = r.statusText; }
+      throw new Error(msg);
+    }
+    return r.json();
+  },
+  get:  (u)    => API.req('GET',u),
+  post: (u,b)  => API.req('POST',u,b),
+  put:  (u,b)  => API.req('PUT',u,b),
+  patch:(u,b)  => API.req('PATCH',u,b),
+  del:  (u)    => API.req('DELETE',u),
+};
+
+// ═══════════════ TOAST ═══════════════
+function toast(msg, type='success'){
+  const el = document.createElement('div');
+  el.className = `toast-anim px-5 py-3 rounded-lg text-white text-sm font-medium shadow-lg ${type==='success'?'bg-eco-600':'bg-red-600'}`;
+  el.textContent = msg;
+  document.getElementById('toast-container').appendChild(el);
+  setTimeout(()=>el.remove(), 3000);
+}
+
+// ═══════════════ NAVIGATION ═══════════════
+function navigate(view){
+  document.querySelectorAll('.nav-item').forEach(el=>{
+    el.classList.toggle('active', el.dataset.view === view);
+  });
+  document.querySelectorAll('.view').forEach(el=>{
+    el.classList.toggle('active', el.id === `view-${view}`);
+  });
+  const labels = {dashboard:'Cruscotto',aziende:'Aziende',contatti:'Contatti',pipeline:'Pipeline',attivita:'Attività',import:'Import CSV'};
+  document.getElementById('breadcrumb').textContent = labels[view] || view;
+  loadView(view);
+}
+
+async function loadView(view){
+  try{
+    switch(view){
+      case 'dashboard': await loadDashboard(); break;
+      case 'aziende':   await loadAziende();   break;
+      case 'contatti':  await loadContatti();  break;
+      case 'pipeline':  await loadPipeline();  break;
+      case 'attivita':  await loadAttivita();  break;
+    }
+  } catch(e){ toast('Errore caricamento: '+e.message,'error'); }
+}
+
+// ═══════════════ DASHBOARD ═══════════════
+async function loadDashboard(){
+  const kpi = await API.get('/api/dashboard/kpi');
+
+  document.getElementById('kpi-aziende').textContent = kpi.total_aziende;
+  document.getElementById('kpi-clienti').textContent = kpi.clienti_attivi;
+  document.getElementById('kpi-opp').textContent     = kpi.opp_in_corso;
+  document.getElementById('kpi-valore').textContent  = formatEuro(kpi.valore_pipeline);
+
+  // Chart
+  const labels = STATI.map(s=>s.charAt(0).toUpperCase()+s.slice(1));
+  const values = STATI.map(s=>kpi.opp_per_stato[s]||0);
+  const colors = ['#94a3b8','#3b82f6','#f59e0b','#f97316','#22c55e','#ef4444'];
+
+  if(oppChart) oppChart.destroy();
+  const ctx = document.getElementById('opp-chart').getContext('2d');
+  oppChart = new Chart(ctx,{
+    type:'bar',
+    data:{ labels, datasets:[{ data:values, backgroundColor:colors, borderRadius:6, borderSkipped:false }] },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false} },
+      scales:{ y:{beginAtZero:true, ticks:{stepSize:1}, grid:{color:'#f1f5f9'}}, x:{grid:{display:false}} }
+    }
+  });
+
+  // Recent activities
+  const el = document.getElementById('attivita-recenti');
+  el.innerHTML = kpi.attivita_recenti.length
+    ? kpi.attivita_recenti.map(a=>`
+        <div class="flex items-start gap-2 py-1.5 border-b border-slate-50 last:border-0">
+          <span class="text-base flex-shrink-0">${TIPO_ATT_ICONS[a.tipo]||'•'}</span>
+          <div class="min-w-0">
+            <div class="text-xs font-medium text-slate-700 truncate">${esc(a.azienda_nome||'—')}</div>
+            <div class="text-xs text-slate-400">${fmtDate(a.data)} · ${esc(a.tipo)}</div>
+          </div>
+        </div>`).join('')
+    : '<div class="text-sm text-slate-400">Nessuna attività recente</div>';
+
+  // Populate filter dropdowns with values from DB
+  populateSelect('az-provincia', kpi.province, 'Tutte');
+  populateSelect('az-regione',   kpi.regioni,  'Tutte');
+}
+
+// ═══════════════ AZIENDE ═══════════════
+let aziendeData = [];
+let selectedAziende = new Set();
+
+async function loadAziende(){
+  const s = document.getElementById('az-search').value;
+  const p = document.getElementById('az-provincia').value;
+  const r = document.getElementById('az-regione').value;
+  const t = document.getElementById('az-tipo').value;
+  const params = new URLSearchParams();
+  if(s) params.set('search',s);
+  if(p) params.set('provincia',p);
+  if(r) params.set('regione',r);
+  if(t) params.set('tipo',t);
+  aziendeData = await API.get('/api/aziende?'+params);
+  selectedAziende.clear();
+  updateAzBatchBar();
+  renderAziende(aziendeData);
+  // Populate contatti filter
+  populateSelectObjs('ct-azienda', aziendeData.map(a=>({value:a.id, label:a.ragione_sociale})), 'Tutte');
+  populateSelectObjs('att-azienda', aziendeData.map(a=>({value:a.id, label:a.ragione_sociale})), 'Tutte');
+}
+
+function renderAziende(list){
+  const tbody = document.getElementById('aziende-tbody');
+  const empty = document.getElementById('aziende-empty');
+  const count = document.getElementById('aziende-count');
+  const selAll = document.getElementById('az-select-all');
+  if(!list.length){ tbody.innerHTML=''; empty.classList.remove('hidden'); count.textContent=''; if(selAll){selAll.checked=false;selAll.indeterminate=false;} return; }
+  empty.classList.add('hidden');
+  count.textContent = `${list.length} aziend${list.length===1?'a':'e'}`;
+  if(selAll){ selAll.checked=false; selAll.indeterminate=false; }
+  tbody.innerHTML = list.map(a=>`
+    <tr class="tr-row">
+      <td class="td text-center w-10"><input type="checkbox" class="az-row-cb cursor-pointer rounded" data-id="${a.id}" onchange="toggleAziendaSelection(${a.id},this.checked)" ${selectedAziende.has(a.id)?'checked':''}></td>
+      <td class="td font-medium">${esc(a.ragione_sociale)}</td>
+      <td class="td text-slate-500">${esc(a.partita_iva||'—')}</td>
+      <td class="td">${esc(a.citta||'—')}</td>
+      <td class="td"><span class="font-mono text-xs">${esc(a.provincia||'—')}</span></td>
+      <td class="td"><span class="badge ${TIPO_AZIENDA_COLORS[a.tipo]||'bg-slate-100 text-slate-600'}">${esc(TIPO_LABELS[a.tipo]||a.tipo||'—')}</span></td>
+      <td class="td">${a.telefono_aziendale?`<a href="tel:${esc(a.telefono_aziendale)}" class="text-eco-700 hover:underline">${esc(a.telefono_aziendale)}</a>`:'—'}</td>
+      <td class="td">${a.email_aziendale?`<a href="mailto:${esc(a.email_aziendale)}" class="text-eco-700 hover:underline">${esc(a.email_aziendale)}</a>`:'—'}</td>
+      <td class="td text-center">${a.website?`<a href="${esc(a.website)}" target="_blank" rel="noopener" title="${esc(a.website)}" class="inline-flex items-center text-eco-600 hover:text-eco-800"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg></a>`:'—'}</td>
+      <td class="td text-center text-slate-400">${a.n_contatti}</td>
+      <td class="td text-center text-slate-400">${a.n_opportunita}</td>
+      <td class="td text-right">
+        <button onclick="openAziendaModal(${a.id})" class="icon-btn" title="Modifica">✏️</button>
+        <button onclick="confirmDeleteById('azienda',${a.id})" class="icon-btn" title="Elimina">🗑️</button>
+      </td>
+    </tr>`).join('');
+}
+
+function applyAzFilter(){ loadAziende(); }
+function resetAzFilter(){
+  ['az-search','az-provincia','az-regione','az-tipo'].forEach(id=>{
+    const el=document.getElementById(id);
+    el.value='';
+  });
+  loadAziende();
+}
+
+async function openAziendaModal(id=null){
+  const isEdit = id !== null;
+  let data = {};
+  if(isEdit) data = await API.get(`/api/aziende/${id}`);
+
+  document.getElementById('modal-title').textContent = isEdit ? 'Modifica Azienda' : 'Nuova Azienda';
+  document.getElementById('modal-body').innerHTML = `
+    <div class="grid grid-cols-1 gap-4">
+      <div class="grid grid-cols-2 gap-4">
+        <div class="col-span-2">
+          <label class="label">Ragione Sociale *</label>
+          <input id="f-ragione_sociale" class="input" value="${esc(data.ragione_sociale||'')}" placeholder="Es. Acme Impianti S.r.l." />
+        </div>
+        <div>
+          <label class="label">Partita IVA</label>
+          <input id="f-partita_iva" class="input" value="${esc(data.partita_iva||'')}" placeholder="12345678901" maxlength="11" />
+        </div>
+        <div>
+          <label class="label">Tipo *</label>
+          <select id="f-tipo" class="input">
+            <option value="">— Seleziona —</option>
+            ${[['metalli','Metalli'],['meccanica','Meccanica'],['legno','Legno'],['chimica','Chimica'],['navale','Navale'],['militare','Militare'],['alimentare','Alimentare'],['plastica','Plastica'],['recycling','Recycling'],['biomassa','Biomassa'],['essiccazione','Essiccazione'],['manutenzione','Manutenzione'],['impiantista','Impiantista'],['biogas','Biogas'],['edilizia','Edilizia'],['impiantista_industriale','Imp. Industriale'],['engineering','Engineering'],['rivenditore','Rivenditore'],['altro','Altro']].map(([v,l])=>`<option value="${v}" ${data.tipo===v?'selected':''}>${l}</option>`).join('')}
+          </select>
+        </div>
+        <div>
+          <label class="label">Indirizzo</label>
+          <input id="f-indirizzo" class="input" value="${esc(data.indirizzo||'')}" placeholder="Via Roma 1" />
+        </div>
+        <div>
+          <label class="label">Città</label>
+          <input id="f-citta" class="input" value="${esc(data.citta||'')}" placeholder="Trento" />
+        </div>
+        <div>
+          <label class="label">Provincia</label>
+          <input id="f-provincia" class="input" value="${esc(data.provincia||'')}" placeholder="TN" maxlength="2" style="text-transform:uppercase" />
+        </div>
+        <div>
+          <label class="label">Regione</label>
+          <input id="f-regione" class="input" value="${esc(data.regione||'')}" placeholder="Trentino-Alto Adige" />
+        </div>
+        <div>
+          <label class="label">Codice ATECO</label>
+          <input id="f-codice_ateco" class="input" value="${esc(data.codice_ateco||'')}" placeholder="28.29.09" />
+        </div>
+        <div>
+          <label class="label">Telefono Aziendale</label>
+          <input id="f-telefono_aziendale" class="input" type="tel" value="${esc(data.telefono_aziendale||'')}" placeholder="+39 0461 000000" />
+        </div>
+        <div>
+          <label class="label">Email Aziendale</label>
+          <input id="f-email_aziendale" class="input" type="email" value="${esc(data.email_aziendale||'')}" placeholder="info@azienda.it" />
+        </div>
+        <div class="col-span-2">
+          <label class="label">Sito Web</label>
+          <input id="f-website" class="input" type="url" value="${esc(data.website||'')}" placeholder="https://www.esempio.it" />
+        </div>
+        <div class="col-span-2">
+          <label class="label">Note</label>
+          <textarea id="f-note" class="input h-20 resize-none" placeholder="Note libere…">${esc(data.note||'')}</textarea>
+        </div>
+      </div>
+    </div>`;
+
+  modalCtx = {
+    type: 'azienda', id,
+    async onSave(){
+      const payload = {
+        ragione_sociale: gv('f-ragione_sociale'),
+        partita_iva:     gv('f-partita_iva')||null,
+        indirizzo:       gv('f-indirizzo')||null,
+        citta:           gv('f-citta')||null,
+        provincia:       (gv('f-provincia')||'').toUpperCase()||null,
+        regione:         gv('f-regione')||null,
+        codice_ateco:        gv('f-codice_ateco')||null,
+        tipo:                gv('f-tipo')||null,
+        telefono_aziendale:  gv('f-telefono_aziendale')||null,
+        email_aziendale:     gv('f-email_aziendale')||null,
+        website:             gv('f-website')||null,
+        note:                gv('f-note')||null,
+      };
+      if(!payload.ragione_sociale){ toast('Ragione sociale obbligatoria','error'); return false; }
+      if(isEdit) await API.put(`/api/aziende/${id}`, payload);
+      else await API.post('/api/aziende', payload);
+      return true;
+    }
+  };
+  showModal();
+}
+
+async function saveModal(){
+  try{
+    const ok = await modalCtx.onSave();
+    if(ok === false) return;
+    hideModal();
+    toast(modalCtx.id ? 'Aggiornato con successo' : 'Creato con successo');
+    loadView(getCurrentView());
+  }catch(e){ toast(e.message,'error'); }
+}
+
+async function deleteAzienda(id){
+  await API.del(`/api/aziende/${id}`);
+  toast('Azienda eliminata');
+  loadAziende();
+}
+
+function toggleSelectAllAziende(checked){
+  if(checked) aziendeData.forEach(a=>selectedAziende.add(a.id));
+  else aziendeData.forEach(a=>selectedAziende.delete(a.id));
+  document.querySelectorAll('.az-row-cb').forEach(cb=>cb.checked=checked);
+  updateAzBatchBar();
+}
+
+function toggleAziendaSelection(id, checked){
+  if(checked) selectedAziende.add(id);
+  else selectedAziende.delete(id);
+  const visible = aziendeData.map(a=>a.id);
+  const nSel = visible.filter(i=>selectedAziende.has(i)).length;
+  const selAll = document.getElementById('az-select-all');
+  if(selAll){
+    selAll.checked = nSel === visible.length && visible.length > 0;
+    selAll.indeterminate = nSel > 0 && nSel < visible.length;
+  }
+  updateAzBatchBar();
+}
+
+function updateAzBatchBar(){
+  const n = selectedAziende.size;
+  const bar = document.getElementById('az-batch-bar');
+  if(!bar) return;
+  document.getElementById('az-batch-n').textContent = n;
+  document.getElementById('az-batch-n2').textContent = n;
+  if(n > 0) bar.classList.remove('hidden');
+  else bar.classList.add('hidden');
+}
+
+function confirmBatchDeleteAziende(){
+  const n = selectedAziende.size;
+  if(!n) return;
+  const label = n === 1 ? '1 azienda selezionata' : `${n} aziende selezionate`;
+  confirmDelete(
+    `Eliminare ${label}? L'operazione non è reversibile.`,
+    batchDeleteAziende
+  );
+}
+
+async function batchDeleteAziende(){
+  const ids = Array.from(selectedAziende);
+  await API.req('DELETE', '/api/aziende/batch', { ids });
+  const n = ids.length;
+  selectedAziende.clear();
+  updateAzBatchBar();
+  toast(`${n} aziend${n===1?'a eliminata':'e eliminate'}`);
+  loadAziende();
+}
+
+// ═══════════════ CONTATTI ═══════════════
+async function loadContatti(){
+  const s = document.getElementById('ct-search').value;
+  const az = document.getElementById('ct-azienda').value;
+  const params = new URLSearchParams();
+  if(s) params.set('search',s);
+  if(az) params.set('id_azienda',az);
+  const list = await API.get('/api/contatti?'+params);
+  renderContatti(list);
+}
+
+function renderContatti(list){
+  const tbody = document.getElementById('contatti-tbody');
+  const empty = document.getElementById('contatti-empty');
+  if(!list.length){ tbody.innerHTML=''; empty.classList.remove('hidden'); return; }
+  empty.classList.add('hidden');
+  tbody.innerHTML = list.map(c=>`
+    <tr class="tr-row">
+      <td class="td font-medium">${esc(c.nome)} ${esc(c.cognome)}</td>
+      <td class="td text-slate-500">${esc(c.ruolo||'—')}</td>
+      <td class="td">
+        <button class="text-eco-700 hover:underline text-sm" onclick="navigate('aziende')">${esc(c.azienda_nome||'—')}</button>
+      </td>
+      <td class="td">${c.telefono?`<a href="tel:${esc(c.telefono)}" class="text-eco-700">${esc(c.telefono)}</a>`:'—'}</td>
+      <td class="td">${c.email?`<a href="mailto:${esc(c.email)}" class="text-eco-700">${esc(c.email)}</a>`:'—'}</td>
+      <td class="td text-right">
+        <button onclick="openContattoModal(${c.id})" class="icon-btn">✏️</button>
+        <button onclick="confirmDeleteById('contatto',${c.id})" class="icon-btn">🗑️</button>
+      </td>
+    </tr>`).join('');
+}
+
+function applyCtFilter(){ loadContatti(); }
+function resetCtFilter(){ document.getElementById('ct-search').value=''; document.getElementById('ct-azienda').value=''; loadContatti(); }
+
+async function openContattoModal(id=null){
+  const isEdit = id !== null;
+  let data = {};
+  if(isEdit) data = await API.get(`/api/contatti/${id}`);
+  const aziende = await API.get('/api/aziende?limit=500');
+
+  document.getElementById('modal-title').textContent = isEdit ? 'Modifica Contatto' : 'Nuovo Contatto';
+  document.getElementById('modal-body').innerHTML = `
+    <div class="grid grid-cols-2 gap-4">
+      <div>
+        <label class="label">Nome *</label>
+        <input id="f-nome" class="input" value="${esc(data.nome||'')}" />
+      </div>
+      <div>
+        <label class="label">Cognome *</label>
+        <input id="f-cognome" class="input" value="${esc(data.cognome||'')}" />
+      </div>
+      <div class="col-span-2">
+        <label class="label">Azienda *</label>
+        <select id="f-id_azienda" class="input">
+          <option value="">— Seleziona azienda —</option>
+          ${aziende.map(a=>`<option value="${a.id}" ${data.id_azienda==a.id?'selected':''}>${esc(a.ragione_sociale)}</option>`).join('')}
+        </select>
+      </div>
+      <div>
+        <label class="label">Ruolo</label>
+        <input id="f-ruolo" class="input" value="${esc(data.ruolo||'')}" placeholder="Es. Responsabile acquisti" />
+      </div>
+      <div>
+        <label class="label">Telefono</label>
+        <input id="f-telefono" class="input" value="${esc(data.telefono||'')}" type="tel" />
+      </div>
+      <div class="col-span-2">
+        <label class="label">Email</label>
+        <input id="f-email" class="input" value="${esc(data.email||'')}" type="email" />
+      </div>
+      <div class="col-span-2">
+        <label class="label">Note</label>
+        <textarea id="f-note" class="input h-20 resize-none">${esc(data.note||'')}</textarea>
+      </div>
+    </div>`;
+
+  modalCtx = {
+    type:'contatto', id,
+    async onSave(){
+      const payload = {
+        id_azienda: parseInt(gv('f-id_azienda')),
+        nome:       gv('f-nome'),
+        cognome:    gv('f-cognome'),
+        ruolo:      gv('f-ruolo')||null,
+        telefono:   gv('f-telefono')||null,
+        email:      gv('f-email')||null,
+        note:       gv('f-note')||null,
+      };
+      if(!payload.nome||!payload.cognome){ toast('Nome e cognome obbligatori','error'); return false; }
+      if(!payload.id_azienda){ toast('Seleziona un\'azienda','error'); return false; }
+      if(isEdit) await API.put(`/api/contatti/${id}`, payload);
+      else await API.post('/api/contatti', payload);
+      return true;
+    }
+  };
+  showModal();
+}
+
+async function deleteContatto(id){
+  await API.del(`/api/contatti/${id}`);
+  toast('Contatto eliminato');
+  loadContatti();
+}
+
+// ═══════════════ PIPELINE (KANBAN) ═══════════════
+async function loadPipeline(){
+  const list = await API.get('/api/opportunita?limit=500');
+  renderPipeline(list);
+}
+
+function renderPipeline(list){
+  const board = document.getElementById('pipeline-board');
+  const statoLabels = {freddo:'❄️ Freddo',contattato:'📞 Contattato',trattativa:'🤝 Trattativa',offerta:'📄 Offerta',cliente:'✅ Cliente',perso:'❌ Perso'};
+
+  board.innerHTML = STATI.map(stato=>{
+    const cards = list.filter(o=>o.stato===stato);
+    const total = cards.reduce((s,c)=>s+(c.valore_stimato||0),0);
+    return `
+      <div class="kanban-col flex-shrink-0 w-72 bg-slate-100 rounded-xl p-3 flex flex-col gap-2">
+        <div class="flex items-center justify-between mb-1">
+          <span class="text-sm font-semibold text-slate-700">${statoLabels[stato]}</span>
+          <span class="badge ${STATO_COLORS[stato]}">${cards.length}</span>
+        </div>
+        ${total>0?`<div class="text-xs text-slate-400 mb-1">${formatEuro(total)}</div>`:''}
+        <div class="kanban-cards flex flex-col gap-2 min-h-12 flex-1"
+             data-stato="${stato}"
+             ondragover="event.preventDefault();this.classList.add('drag-over')"
+             ondragleave="this.classList.remove('drag-over')"
+             ondrop="handleKanbanDrop(event,'${stato}')">
+          ${cards.map(c=>kanbanCard(c)).join('')}
+        </div>
+        <button onclick="openOppModal(null,'${stato}')" class="text-xs text-slate-400 hover:text-eco-600 mt-1 py-1 rounded hover:bg-white transition-colors">+ Aggiungi</button>
+      </div>`;
+  }).join('');
+}
+
+function kanbanCard(o){
+  return `
+    <div class="kanban-card bg-white rounded-lg p-3 shadow-sm border border-slate-100 cursor-grab"
+         draggable="true"
+         ondragstart="handleKanbanDragStart(event,${o.id})"
+         ondragend="document.querySelectorAll('.kanban-cards').forEach(el=>el.classList.remove('drag-over'))">
+      <div class="font-medium text-sm text-slate-800 mb-1 leading-snug">${esc(o.titolo)}</div>
+      <div class="text-xs text-slate-500 mb-2">${esc(o.azienda_nome||'—')}</div>
+      ${o.valore_stimato?`<div class="text-xs font-semibold text-eco-700 mb-1">${formatEuro(o.valore_stimato)}</div>`:''}
+      <div class="flex items-center justify-between mt-1">
+        ${o.data_ultimo_contatto?`<span class="text-xs text-slate-400">${fmtDate(o.data_ultimo_contatto)}</span>`:'<span></span>'}
+        <div class="flex gap-1">
+          <button onclick="openOppModal(${o.id})" class="icon-btn-sm" title="Modifica">✏️</button>
+          <button onclick="confirmDeleteById('opportunita',${o.id})" class="icon-btn-sm" title="Elimina">🗑️</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+let dragOppId = null;
+function handleKanbanDragStart(e, id){ dragOppId = id; e.dataTransfer.effectAllowed='move'; }
+async function handleKanbanDrop(e, stato){
+  e.preventDefault();
+  e.currentTarget.classList.remove('drag-over');
+  if(!dragOppId) return;
+  try{
+    await API.patch(`/api/opportunita/${dragOppId}/stato`, {stato});
+    await loadPipeline();
+    toast(`Spostato in "${stato}"`);
+  }catch(err){ toast(err.message,'error'); }
+  dragOppId = null;
+}
+
+async function openOppModal(id=null, defaultStato='freddo'){
+  const isEdit = id !== null;
+  let data = {};
+  if(isEdit) data = await API.get(`/api/opportunita/${id}`);
+  const aziende = await API.get('/api/aziende?limit=500');
+
+  document.getElementById('modal-title').textContent = isEdit ? 'Modifica Opportunità' : 'Nuova Opportunità';
+  document.getElementById('modal-body').innerHTML = `
+    <div class="grid grid-cols-2 gap-4">
+      <div class="col-span-2">
+        <label class="label">Titolo *</label>
+        <input id="f-titolo" class="input" value="${esc(data.titolo||'')}" placeholder="Es. Impianto filtrazione acque — Fabbrica Nord" />
+      </div>
+      <div>
+        <label class="label">Azienda *</label>
+        <select id="f-id_azienda" class="input" onchange="loadContattiForAzienda()">
+          <option value="">— Seleziona —</option>
+          ${aziende.map(a=>`<option value="${a.id}" ${data.id_azienda==a.id?'selected':''}>${esc(a.ragione_sociale)}</option>`).join('')}
+        </select>
+      </div>
+      <div>
+        <label class="label">Contatto</label>
+        <select id="f-id_contatto" class="input"><option value="">— nessuno —</option></select>
+      </div>
+      <div>
+        <label class="label">Stato</label>
+        <select id="f-stato" class="input">
+          ${STATI.map(s=>`<option value="${s}" ${(data.stato||defaultStato)===s?'selected':''}>${s.charAt(0).toUpperCase()+s.slice(1)}</option>`).join('')}
+        </select>
+      </div>
+      <div>
+        <label class="label">Valore Stimato (€)</label>
+        <input id="f-valore_stimato" class="input" type="number" min="0" step="100" value="${data.valore_stimato||''}" placeholder="0" />
+      </div>
+      <div>
+        <label class="label">Primo Contatto</label>
+        <input id="f-data_primo_contatto" class="input" type="date" value="${fmtDateInput(data.data_primo_contatto)}" />
+      </div>
+      <div>
+        <label class="label">Ultimo Contatto</label>
+        <input id="f-data_ultimo_contatto" class="input" type="date" value="${fmtDateInput(data.data_ultimo_contatto)}" />
+      </div>
+      <div class="col-span-2">
+        <label class="label">Note</label>
+        <textarea id="f-note" class="input h-20 resize-none">${esc(data.note||'')}</textarea>
+      </div>
+    </div>`;
+
+  if(data.id_azienda) await loadContattiForAzienda(data.id_contatto);
+
+  modalCtx = {
+    type:'opportunita', id,
+    async onSave(){
+      const azId = parseInt(gv('f-id_azienda'));
+      const payload = {
+        id_azienda:           azId,
+        id_contatto:          parseInt(gv('f-id_contatto'))||null,
+        titolo:               gv('f-titolo'),
+        stato:                gv('f-stato'),
+        valore_stimato:       parseFloat(gv('f-valore_stimato'))||null,
+        data_primo_contatto:  gv('f-data_primo_contatto')||null,
+        data_ultimo_contatto: gv('f-data_ultimo_contatto')||null,
+        note:                 gv('f-note')||null,
+      };
+      if(!payload.titolo){ toast('Titolo obbligatorio','error'); return false; }
+      if(!payload.id_azienda){ toast('Seleziona un\'azienda','error'); return false; }
+      if(isEdit) await API.put(`/api/opportunita/${id}`, payload);
+      else await API.post('/api/opportunita', payload);
+      return true;
+    }
+  };
+  showModal();
+}
+
+async function loadContattiForAzienda(selectedId=null){
+  const azId = gv('f-id_azienda');
+  const sel = document.getElementById('f-id_contatto');
+  if(!azId){ sel.innerHTML='<option value="">— nessuno —</option>'; return; }
+  const list = await API.get(`/api/contatti?id_azienda=${azId}`);
+  sel.innerHTML = '<option value="">— nessuno —</option>' +
+    list.map(c=>`<option value="${c.id}" ${selectedId==c.id?'selected':''}>${esc(c.nome)} ${esc(c.cognome)}</option>`).join('');
+}
+
+async function deleteOpp(id){
+  await API.del(`/api/opportunita/${id}`);
+  toast('Opportunità eliminata');
+  loadPipeline();
+}
+
+// ═══════════════ ATTIVITÀ ═══════════════
+async function loadAttivita(){
+  const tipo = document.getElementById('att-tipo').value;
+  const azId = document.getElementById('att-azienda').value;
+  const params = new URLSearchParams();
+  if(tipo) params.set('tipo',tipo);
+  if(azId) params.set('id_azienda',azId);
+  const list = await API.get('/api/attivita?'+params);
+  renderAttivita(list);
+}
+
+function renderAttivita(list){
+  const tbody = document.getElementById('attivita-tbody');
+  const empty = document.getElementById('attivita-empty');
+  if(!list.length){ tbody.innerHTML=''; empty.classList.remove('hidden'); return; }
+  empty.classList.add('hidden');
+  tbody.innerHTML = list.map(a=>`
+    <tr class="tr-row">
+      <td class="td text-slate-500 whitespace-nowrap">${fmtDate(a.data)}</td>
+      <td class="td"><span class="badge bg-slate-100 text-slate-700">${TIPO_ATT_ICONS[a.tipo]||''} ${esc(a.tipo)}</span></td>
+      <td class="td font-medium">${esc(a.azienda_nome||'—')}</td>
+      <td class="td text-slate-500 text-xs">${esc(a.opportunita_titolo||'—')}</td>
+      <td class="td text-slate-600 max-w-xs truncate" title="${esc(a.descrizione||'')}">${esc(a.descrizione||'—')}</td>
+      <td class="td text-slate-500 max-w-xs truncate" title="${esc(a.esito||'')}">${esc(a.esito||'—')}</td>
+      <td class="td text-right">
+        <button onclick="openAttivitaModal(${a.id})" class="icon-btn">✏️</button>
+        <button onclick="confirmDeleteById('attivita',${a.id})" class="icon-btn">🗑️</button>
+      </td>
+    </tr>`).join('');
+}
+
+async function openAttivitaModal(id=null){
+  const isEdit = id !== null;
+  let data = {};
+  if(isEdit) data = await API.get(`/api/attivita/${id}`);
+  const aziende = await API.get('/api/aziende?limit=500');
+  const opps = data.id_azienda ? await API.get(`/api/opportunita?id_azienda=${data.id_azienda}`) : [];
+
+  document.getElementById('modal-title').textContent = isEdit ? 'Modifica Attività' : 'Nuova Attività';
+  document.getElementById('modal-body').innerHTML = `
+    <div class="grid grid-cols-2 gap-4">
+      <div>
+        <label class="label">Azienda *</label>
+        <select id="f-id_azienda" class="input" onchange="loadOppForAttivita()">
+          <option value="">— Seleziona —</option>
+          ${aziende.map(a=>`<option value="${a.id}" ${data.id_azienda==a.id?'selected':''}>${esc(a.ragione_sociale)}</option>`).join('')}
+        </select>
+      </div>
+      <div>
+        <label class="label">Opportunità</label>
+        <select id="f-id_opportunita" class="input">
+          <option value="">— nessuna —</option>
+          ${opps.map(o=>`<option value="${o.id}" ${data.id_opportunita==o.id?'selected':''}>${esc(o.titolo)}</option>`).join('')}
+        </select>
+      </div>
+      <div>
+        <label class="label">Tipo *</label>
+        <select id="f-tipo" class="input">
+          ${['chiamata','email','visita','offerta'].map(t=>`<option value="${t}" ${data.tipo===t?'selected':''}>${t.charAt(0).toUpperCase()+t.slice(1)}</option>`).join('')}
+        </select>
+      </div>
+      <div>
+        <label class="label">Data *</label>
+        <input id="f-data" class="input" type="datetime-local" value="${fmtDatetimeInput(data.data)}" />
+      </div>
+      <div class="col-span-2">
+        <label class="label">Descrizione</label>
+        <textarea id="f-descrizione" class="input h-20 resize-none" placeholder="Dettagli dell'attività…">${esc(data.descrizione||'')}</textarea>
+      </div>
+      <div class="col-span-2">
+        <label class="label">Esito</label>
+        <textarea id="f-esito" class="input h-16 resize-none" placeholder="Risultato, prossimi passi…">${esc(data.esito||'')}</textarea>
+      </div>
+    </div>`;
+
+  modalCtx = {
+    type:'attivita', id,
+    async onSave(){
+      const payload = {
+        id_azienda:     parseInt(gv('f-id_azienda')),
+        id_opportunita: parseInt(gv('f-id_opportunita'))||null,
+        tipo:           gv('f-tipo'),
+        data:           gv('f-data'),
+        descrizione:    gv('f-descrizione')||null,
+        esito:          gv('f-esito')||null,
+      };
+      if(!payload.id_azienda){ toast('Seleziona un\'azienda','error'); return false; }
+      if(!payload.data){ toast('Data obbligatoria','error'); return false; }
+      if(isEdit) await API.put(`/api/attivita/${id}`, payload);
+      else await API.post('/api/attivita', payload);
+      return true;
+    }
+  };
+  showModal();
+}
+
+async function loadOppForAttivita(){
+  const azId = gv('f-id_azienda');
+  const sel = document.getElementById('f-id_opportunita');
+  if(!azId){ sel.innerHTML='<option value="">— nessuna —</option>'; return; }
+  const opps = await API.get(`/api/opportunita?id_azienda=${azId}`);
+  sel.innerHTML = '<option value="">— nessuna —</option>' +
+    opps.map(o=>`<option value="${o.id}">${esc(o.titolo)}</option>`).join('');
+}
+
+async function deleteAttivita(id){
+  await API.del(`/api/attivita/${id}`);
+  toast('Attività eliminata');
+  loadAttivita();
+}
+
+// ═══════════════ IMPORT CSV ═══════════════
+const DB_FIELD_LABELS = {
+  ragione_sociale:'Ragione Sociale *',
+  partita_iva:'Partita IVA',
+  indirizzo:'Indirizzo',
+  citta:'Città',
+  provincia:'Provincia',
+  regione:'Regione',
+  codice_ateco:'Codice ATECO',
+  tipo:'Tipo',
+  note:'Note'
+};
+
+function handleFileDrop(e){
+  e.preventDefault();
+  document.getElementById('drop-zone').classList.remove('border-eco-500');
+  const file = e.dataTransfer.files[0];
+  if(file) processCSVFile(file);
+}
+
+function handleFileSelect(e){
+  const file = e.target.files[0];
+  if(file) processCSVFile(file);
+}
+
+async function processCSVFile(file){
+  csvFile = file;
+  document.getElementById('file-name').textContent = file.name;
+  document.getElementById('file-selected').classList.remove('hidden');
+
+  const fd = new FormData();
+  fd.append('file', file);
+  try{
+    const res = await API.req('POST','/api/import/preview', fd);
+    csvColumns = res.columns;
+
+    // Preview table
+    const previewHtml = `
+      <p class="text-xs text-slate-500 mb-1">Anteprima prime righe:</p>
+      <div class="overflow-x-auto rounded border border-slate-200 mb-2">
+        <table class="text-xs">
+          <thead class="bg-slate-50"><tr>${res.columns.map(c=>`<th class="px-2 py-1 text-slate-500 font-medium whitespace-nowrap">${esc(c)}</th>`).join('')}</tr></thead>
+          <tbody>${res.preview.map(row=>`<tr class="border-t border-slate-100">${res.columns.map(c=>`<td class="px-2 py-1 text-slate-600 whitespace-nowrap">${esc(row[c]||'')}</td>`).join('')}</tr>`).join('')}</tbody>
+        </table>
+      </div>`;
+    document.getElementById('csv-preview').innerHTML = previewHtml;
+
+    // Mapping rows — auto-match by similarity
+    const tbody = document.getElementById('mapping-tbody');
+    tbody.innerHTML = Object.entries(DB_FIELD_LABELS).map(([field, label])=>{
+      const autoMatch = csvColumns.find(c=>c.toLowerCase().replace(/\s/g,'_').includes(field.replace(/_/g,'')) || field.includes(c.toLowerCase().replace(/\s/g,'')));
+      return `<tr class="border-b border-slate-100">
+        <td class="py-2 pr-4 text-sm font-medium text-slate-700">${label}</td>
+        <td class="py-2">
+          <select id="map-${field}" class="input text-sm">
+            <option value="">— Non importare —</option>
+            ${csvColumns.map(c=>`<option value="${esc(c)}" ${autoMatch===c?'selected':''}>${esc(c)}</option>`).join('')}
+          </select>
+        </td>
+      </tr>`;
+    }).join('');
+
+    document.getElementById('import-step2').classList.remove('hidden');
+  }catch(e){ toast('Errore lettura CSV: '+e.message,'error'); }
+}
+
+async function executeImport(){
+  const mapping = {};
+  Object.keys(DB_FIELD_LABELS).forEach(field=>{
+    const val = document.getElementById(`map-${field}`)?.value;
+    if(val) mapping[field]=val;
+  });
+  if(!mapping.ragione_sociale){ toast('Devi mappare il campo Ragione Sociale','error'); return; }
+
+  const fd = new FormData();
+  fd.append('file', csvFile);
+  fd.append('mapping', JSON.stringify(mapping));
+
+  try{
+    const res = await API.req('POST','/api/import/execute', fd);
+    document.getElementById('import-result-content').innerHTML = `
+      <div class="flex gap-4 mb-3">
+        <div class="bg-eco-50 border border-eco-200 rounded-lg p-4 flex-1 text-center">
+          <div class="text-2xl font-bold text-eco-700">${res.imported}</div>
+          <div class="text-xs text-slate-500 mt-1">Aziende importate</div>
+        </div>
+        <div class="bg-slate-50 border border-slate-200 rounded-lg p-4 flex-1 text-center">
+          <div class="text-2xl font-bold text-slate-500">${res.skipped}</div>
+          <div class="text-xs text-slate-500 mt-1">Saltate (duplicati)</div>
+        </div>
+      </div>
+      ${res.errors.length?`<div class="text-xs text-red-600 bg-red-50 rounded p-3"><b>Errori:</b><br>${res.errors.map(e=>esc(e)).join('<br>')}</div>`:''}`;
+    document.getElementById('import-result').classList.remove('hidden');
+    toast(`Importate ${res.imported} aziende`);
+  }catch(e){ toast('Errore import: '+e.message,'error'); }
+}
+
+function resetImport(){
+  csvFile=null; csvColumns=[];
+  document.getElementById('csv-file-input').value='';
+  document.getElementById('file-selected').classList.add('hidden');
+  document.getElementById('import-step2').classList.add('hidden');
+  document.getElementById('import-result').classList.add('hidden');
+}
+
+// ═══════════════ GLOBAL SEARCH ═══════════════
+let searchTimeout;
+function onGlobalSearch(val){
+  clearTimeout(searchTimeout);
+  const container = document.getElementById('search-results');
+  if(val.length<2){ container.classList.add('hidden'); return; }
+  searchTimeout = setTimeout(async()=>{
+    const res = await API.get(`/api/dashboard/search?q=${encodeURIComponent(val)}`);
+    let html = '';
+    if(res.aziende.length){
+      html += `<div class="px-3 py-1.5 text-xs font-semibold text-slate-400 uppercase bg-slate-50">Aziende</div>`;
+      html += res.aziende.map(a=>`<button onclick="navigate('aziende');document.getElementById('global-search').value='';hideSearch()" class="block w-full text-left px-3 py-2 hover:bg-slate-50 text-sm"><span class="font-medium">${esc(a.label)}</span> <span class="text-slate-400 text-xs ml-1">${esc(a.tipo||'')}</span></button>`).join('');
+    }
+    if(res.opportunita.length){
+      html += `<div class="px-3 py-1.5 text-xs font-semibold text-slate-400 uppercase bg-slate-50">Opportunità</div>`;
+      html += res.opportunita.map(o=>`<button onclick="navigate('pipeline');hideSearch()" class="block w-full text-left px-3 py-2 hover:bg-slate-50 text-sm"><span class="font-medium">${esc(o.label)}</span> <span class="badge ${STATO_COLORS[o.stato]||''} ml-1">${esc(o.stato)}</span></button>`).join('');
+    }
+    if(!html) html = '<div class="px-3 py-4 text-sm text-slate-400 text-center">Nessun risultato</div>';
+    container.innerHTML = html;
+    container.classList.remove('hidden');
+  }, 300);
+}
+function hideSearch(){ document.getElementById('search-results').classList.add('hidden'); }
+document.addEventListener('click', e=>{ if(!e.target.closest('#global-search')&&!e.target.closest('#search-results')) hideSearch(); });
+
+// ═══════════════ MODAL ═══════════════
+function showModal(){ document.getElementById('modal-overlay').classList.remove('hidden'); }
+function hideModal(){ document.getElementById('modal-overlay').classList.add('hidden'); modalCtx={}; }
+function closeModal(e){ if(e.target.id==='modal-overlay') hideModal(); }
+
+// ═══════════════ CONFIRM DELETE ═══════════════
+function confirmDelete(msg, fn){
+  document.getElementById('confirm-msg').textContent = msg;
+  document.getElementById('confirm-overlay').classList.remove('hidden');
+  confirmFn = fn;
+}
+function confirmDeleteById(type, id){
+  const msgs = {
+    azienda:     'Eliminare questa azienda e tutti i dati correlati?',
+    contatto:    'Eliminare questo contatto?',
+    opportunita: 'Eliminare questa opportunità?',
+    attivita:    'Eliminare questa attività?',
+  };
+  const fns = {
+    azienda:     ()=>deleteAzienda(id),
+    contatto:    ()=>deleteContatto(id),
+    opportunita: ()=>deleteOpp(id),
+    attivita:    ()=>deleteAttivita(id),
+  };
+  confirmDelete(msgs[type]||'Eliminare?', fns[type]||(()=>{}));
+}
+function hideConfirm(){ document.getElementById('confirm-overlay').classList.add('hidden'); confirmFn=null; }
+document.getElementById('confirm-ok').onclick = async()=>{
+  if(confirmFn){ try{ await confirmFn(); }catch(e){ toast(e.message,'error'); } }
+  hideConfirm();
+};
+
+// ═══════════════ UTILITIES ═══════════════
+function gv(id){ return (document.getElementById(id)?.value||'').trim(); }
+function esc(s){ if(s==null) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function getCurrentView(){ return document.querySelector('.view.active')?.id?.replace('view-',''); }
+
+function formatEuro(val){
+  if(!val && val!==0) return '—';
+  if(val>=1000000) return '€'+(val/1000000).toFixed(1)+'M';
+  if(val>=1000) return '€'+(val/1000).toFixed(0)+'K';
+  return '€'+val.toLocaleString('it-IT');
+}
+
+function fmtDate(iso){
+  if(!iso) return '—';
+  try{
+    const d = new Date(iso);
+    return d.toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit',year:'numeric'});
+  }catch{ return iso; }
+}
+
+function fmtDateInput(iso){
+  if(!iso) return '';
+  try{ return new Date(iso).toISOString().split('T')[0]; }catch{ return ''; }
+}
+
+function fmtDatetimeInput(iso){
+  if(!iso) return '';
+  try{ return new Date(iso).toISOString().slice(0,16); }catch{ return ''; }
+}
+
+function populateSelect(id, values, placeholder){
+  const el = document.getElementById(id);
+  if(!el) return;
+  const cur = el.value;
+  el.innerHTML = `<option value="">${placeholder}</option>` +
+    values.filter(Boolean).map(v=>`<option value="${esc(v)}" ${cur===v?'selected':''}>${esc(v)}</option>`).join('');
+}
+
+function populateSelectObjs(id, items, placeholder){
+  const el = document.getElementById(id);
+  if(!el) return;
+  const cur = el.value;
+  el.innerHTML = `<option value="">${placeholder}</option>` +
+    items.map(i=>`<option value="${i.value}" ${String(cur)===String(i.value)?'selected':''}>${esc(i.label)}</option>`).join('');
+}
+
+// icon button styles (injected to avoid Tailwind purge issues)
+const style = document.createElement('style');
+style.textContent = '.icon-btn{padding:2px 4px;font-size:1rem;border-radius:4px;opacity:.6;transition:opacity .1s;cursor:pointer;background:none;border:none}.icon-btn:hover{opacity:1}.icon-btn-sm{padding:1px 3px;font-size:.85rem;border-radius:3px;opacity:.5;transition:opacity .1s;cursor:pointer;background:none;border:none}.icon-btn-sm:hover{opacity:1}';
+document.head.appendChild(style);
+
+// ═══════════════ INIT ═══════════════
+navigate('dashboard');
+</script>
+</body>
+</html>
