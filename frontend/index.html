@@ -435,6 +435,20 @@
   </div>
 </div>
 
+<!-- ═══════════════════ SCHEDA AZIENDA (sola lettura) ═══════════════════ -->
+<div id="scheda-overlay" class="hidden fixed inset-0 bg-black/40 z-40 flex items-center justify-center p-4" onclick="closeScheda(event)">
+  <div class="modal-enter bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col" onclick="event.stopPropagation()">
+    <div id="scheda-content" class="flex-1 overflow-y-auto min-h-0"></div>
+    <div class="flex justify-between items-center gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50 rounded-b-2xl flex-shrink-0">
+      <button onclick="hideScheda()" class="btn-ghost">Chiudi</button>
+      <button id="scheda-edit-btn" class="btn-primary flex items-center gap-2">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+        Modifica
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- ═══════════════════ DELETE CONFIRM ═══════════════════ -->
 <div id="confirm-overlay" class="hidden fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
   <div class="modal-enter bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
@@ -657,7 +671,7 @@ function renderAziende(list){
   tbody.innerHTML = list.map(a=>`
     <tr class="tr-row">
       <td class="td text-center w-10"><input type="checkbox" class="az-row-cb cursor-pointer rounded" data-id="${a.id}" onchange="toggleAziendaSelection(${a.id},this.checked)" ${selectedAziende.has(a.id)?'checked':''}></td>
-      <td class="td font-medium">${esc(a.ragione_sociale)}</td>
+      <td class="td"><button onclick="openAziendaScheda(${a.id})" class="font-medium text-left hover:text-eco-700 hover:underline transition-colors">${esc(a.ragione_sociale)}</button></td>
       <td class="td text-slate-500">${esc(a.partita_iva||'—')}</td>
       <td class="td">${esc(a.citta||'—')}</td>
       <td class="td"><span class="font-mono text-xs">${esc(a.provincia||'—')}</span></td>
@@ -815,6 +829,120 @@ async function deleteAzienda(id){
   await API.del(`/api/aziende/${id}`);
   toast('Azienda eliminata');
   loadAziende();
+}
+
+// ═══════════════ SCHEDA AZIENDA (sola lettura) ═══════════════
+
+async function openAziendaScheda(id){
+  const [az, contatti, opps] = await Promise.all([
+    API.get(`/api/aziende/${id}`),
+    API.get(`/api/contatti?id_azienda=${id}`),
+    API.get(`/api/opportunita?id_azienda=${id}&limit=100`),
+  ]);
+  document.getElementById('scheda-content').innerHTML = buildSchedaHTML(az, contatti, opps);
+  document.getElementById('scheda-edit-btn').onclick = ()=>{ hideScheda(); openAziendaModal(id); };
+  document.getElementById('scheda-overlay').classList.remove('hidden');
+}
+
+function hideScheda(){
+  document.getElementById('scheda-overlay').classList.add('hidden');
+}
+
+function closeScheda(e){
+  if(e.target.id==='scheda-overlay') hideScheda();
+}
+
+function buildSchedaHTML(az, contatti, opps){
+  const tipoBadge = az.tipo
+    ? `<span class="badge ${TIPO_AZIENDA_COLORS[az.tipo]||'bg-slate-100 text-slate-600'}">${esc(TIPO_LABELS[az.tipo]||az.tipo)}</span>` : '';
+  const ordineBadge = az.ordine
+    ? '<span class="badge bg-green-100 text-green-700">✓ Ha ordinato</span>' : '';
+  const fonteBadge = az.fonte_lead
+    ? `<span class="badge bg-sky-50 text-sky-600">${esc(az.fonte_lead)}</span>` : '';
+
+  // Dati azienda: coppie [label, HTML-value]
+  const campi = [
+    ['P.IVA',               az.partita_iva],
+    ['Indirizzo',           az.indirizzo],
+    ['Città',              az.citta],
+    ['Provincia',          az.provincia ? `<span class="font-mono">${esc(az.provincia)}</span>` : null],
+    ['Regione',            az.regione],
+    ['Cod. ATECO',         az.codice_ateco],
+    ['Attività',           az.attivita_descrizione],
+    ['Prodotto/Interesse', az.prodotto_interesse],
+    ['Commessa',           az.commessa_euro ? `<span class="font-semibold text-eco-700">${formatEuro(az.commessa_euro)}</span>` : null],
+    ['Telefono',           az.telefono_aziendale ? `<a href="tel:${esc(az.telefono_aziendale)}" class="text-eco-700 hover:underline">${esc(az.telefono_aziendale)}</a>` : null],
+    ['Email',              az.email_aziendale ? `<a href="mailto:${esc(az.email_aziendale)}" class="text-eco-700 hover:underline">${esc(az.email_aziendale)}</a>` : null],
+    ['Sito Web',           az.website ? `<a href="${esc(az.website)}" target="_blank" rel="noopener" class="text-eco-700 hover:underline break-all">${esc(az.website)}</a>` : null],
+  ].filter(([,v])=>v!=null && v!=='');
+
+  const datiHTML = campi.map(([label, val])=>`
+    <div class="flex gap-3 py-1.5 border-b border-slate-50 last:border-0">
+      <span class="text-xs text-slate-400 font-medium uppercase tracking-wide w-36 flex-shrink-0 pt-0.5">${esc(label)}</span>
+      <span class="text-sm text-slate-800 flex-1">${typeof val==='string'&&!val.startsWith('<')?esc(val):val}</span>
+    </div>`).join('');
+
+  // Contatti
+  const contHTML = contatti.length ? contatti.map(c=>`
+    <div class="flex items-start gap-3 py-2.5 border-b border-slate-50 last:border-0">
+      <div class="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-xs font-bold text-slate-500 flex-shrink-0">${esc((c.nome||'?')[0].toUpperCase()+(c.cognome||'')[0]||'')}</div>
+      <div class="flex-1 min-w-0">
+        <div class="text-sm font-medium text-slate-800">${esc(c.nome)} ${esc(c.cognome)}</div>
+        ${c.ruolo?`<div class="text-xs text-slate-500 mb-0.5">${esc(c.ruolo)}</div>`:''}
+        <div class="flex flex-wrap gap-3">
+          ${c.telefono?`<a href="tel:${esc(c.telefono)}" class="text-xs text-eco-700 hover:underline">${esc(c.telefono)}</a>`:''}
+          ${c.email?`<a href="mailto:${esc(c.email)}" class="text-xs text-eco-700 hover:underline">${esc(c.email)}</a>`:''}
+        </div>
+      </div>
+    </div>`).join('')
+    : '<p class="text-sm text-slate-400 py-1">Nessun contatto collegato</p>';
+
+  // Opportunità
+  const oppHTML = opps.length ? opps.map(o=>`
+    <div class="py-2.5 border-b border-slate-50 last:border-0">
+      <div class="flex items-center gap-2 flex-wrap">
+        <span class="text-sm font-medium text-slate-800">${esc(o.titolo)}</span>
+        <span class="badge ${STATO_COLORS[o.stato]||'bg-slate-100 text-slate-600'}">${esc(o.stato)}</span>
+        ${o.valore_stimato?`<span class="text-xs font-semibold text-eco-700">${formatEuro(o.valore_stimato)}</span>`:''}
+        ${o.data_ultimo_contatto?`<span class="text-xs text-slate-400">${fmtDate(o.data_ultimo_contatto)}</span>`:''}
+      </div>
+      ${o.note?`<p class="text-xs text-slate-500 mt-1 line-clamp-2">${esc(o.note)}</p>`:''}
+    </div>`).join('')
+    : '<p class="text-sm text-slate-400 py-1">Nessuna opportunità collegata</p>';
+
+  const noteHTML = az.note ? `
+    <div>
+      <h3 class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Note</h3>
+      <p class="text-sm text-slate-700 whitespace-pre-wrap bg-slate-50 rounded-lg p-3 border border-slate-100">${esc(az.note)}</p>
+    </div>` : '';
+
+  return `
+    <div class="px-6 pt-6 pb-5 border-b border-slate-100">
+      <div class="flex items-start justify-between gap-3">
+        <div class="flex-1 min-w-0">
+          <h2 class="text-2xl font-bold text-slate-800 leading-tight">${esc(az.ragione_sociale)}</h2>
+          <div class="flex flex-wrap items-center gap-2 mt-2">${tipoBadge}${ordineBadge}${fonteBadge}</div>
+        </div>
+        <button onclick="hideScheda()" class="text-slate-400 hover:text-slate-600 transition-colors flex-shrink-0 mt-1 p-1">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="px-6 py-5 space-y-6">
+      <div>
+        <h3 class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Dati Azienda</h3>
+        <div>${datiHTML||'<p class="text-sm text-slate-400">—</p>'}</div>
+      </div>
+      <div>
+        <h3 class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Contatti collegati <span class="text-slate-400 font-normal normal-case">(${contatti.length})</span></h3>
+        ${contHTML}
+      </div>
+      <div>
+        <h3 class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Opportunità collegate <span class="text-slate-400 font-normal normal-case">(${opps.length})</span></h3>
+        ${oppHTML}
+      </div>
+      ${noteHTML}
+    </div>`;
 }
 
 function toggleSelectAllAziende(checked){
