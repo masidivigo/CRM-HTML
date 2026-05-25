@@ -24,6 +24,7 @@ class Azienda(Base):
     fonte_lead = Column(String(50))
     ordine = Column(Boolean, default=False)
     commessa_euro = Column(Float)
+    etichetta = Column(String(20))
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, onupdate=func.now())
 

@@ -1,4 +1,7 @@
-from fastapi import APIRouter, Depends
+from collections import defaultdict
+from typing import Optional
+
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 import models
@@ -75,6 +78,56 @@ def get_kpi(db: Session = Depends(get_db)):
         "province": province,
         "regioni": regioni,
     }
+
+
+@router.get("/province")
+def get_province(regione: Optional[str] = Query(None), db: Session = Depends(get_db)):
+    az_q = db.query(models.Azienda).filter(
+        models.Azienda.provincia.isnot(None),
+        models.Azienda.provincia != "",
+    )
+    if regione:
+        az_q = az_q.filter(models.Azienda.regione == regione)
+
+    aziende = az_q.all()
+    az_id_set = {a.id for a in aziende}
+
+    prov_map: dict = defaultdict(lambda: {"regione": "", "az_ids": set()})
+    for a in aziende:
+        prov = (a.provincia or "").strip().upper()
+        if not prov:
+            continue
+        prov_map[prov]["az_ids"].add(a.id)
+        if a.regione and not prov_map[prov]["regione"]:
+            prov_map[prov]["regione"] = a.regione
+
+    opps = (
+        db.query(models.Opportunita)
+        .filter(models.Opportunita.id_azienda.in_(az_id_set))
+        .all()
+    )
+    opps_by_az: dict = defaultdict(list)
+    for o in opps:
+        opps_by_az[o.id_azienda].append(o)
+
+    result = []
+    for prov, data in prov_map.items():
+        az_ids = data["az_ids"]
+        opp_list = [o for aid in az_ids for o in opps_by_az.get(aid, [])]
+        n_clienti = sum(1 for o in opp_list if o.stato == "cliente")
+        n_opp_attive = sum(1 for o in opp_list if o.stato not in ("cliente", "perso"))
+        valore = sum(o.valore_stimato or 0 for o in opp_list if o.stato != "perso")
+        result.append({
+            "provincia": prov,
+            "regione": data["regione"],
+            "n_aziende": len(az_ids),
+            "n_clienti": n_clienti,
+            "n_opp_attive": n_opp_attive,
+            "valore_pipeline": round(valore, 2),
+        })
+
+    result.sort(key=lambda x: x["n_aziende"], reverse=True)
+    return result
 
 
 @router.get("/search")

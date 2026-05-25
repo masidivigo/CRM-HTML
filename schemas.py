@@ -23,6 +23,7 @@ class AziendaCreate(BaseModel):
     fonte_lead: Optional[str] = None
     ordine: Optional[bool] = False
     commessa_euro: Optional[float] = None
+    etichetta: Optional[str] = None
 
 
 class AziendaUpdate(BaseModel):
@@ -43,6 +44,7 @@ class AziendaUpdate(BaseModel):
     fonte_lead: Optional[str] = None
     ordine: Optional[bool] = None
     commessa_euro: Optional[float] = None
+    etichetta: Optional[str] = None
 
 
 # ─── Contatto ────────────────────────────────────────────────────────────────

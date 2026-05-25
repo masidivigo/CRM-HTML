@@ -1,15 +1,14 @@
 #!/usr/bin/env python3
 """
-import_legacy.py — Importa dati dal CSV storico nel database CRM Ecotrentino.
+import_legacy.py — Importa/aggiorna dati dal CSV storico nel CRM Ecotrentino.
 
 Uso:
     python import_legacy.py <file.csv>
 
 Il CSV deve avere separatore ";" e encoding utf-8-sig.
-Colonne attese (nomi esatti, case-insensitive):
-    Cliente, Attività, Indirizzo, Città, Sito, Email, Telefono,
-    Contatto, Contatto diretto, Settore, Prodotto/Interesse,
-    Fonte Lead, Stato, Ultimo contatto, Feedback/Note, Ordine, Commessa €
+Comportamento:
+    - Se l'azienda (per ragione sociale) NON esiste → crea azienda + contatto + opportunità
+    - Se l'azienda ESISTE già             → aggiorna i campi vuoti/mancanti + crea contatto se assente
 """
 
 import csv
@@ -91,7 +90,7 @@ def clean(val) -> str:
 
 
 def col(row: dict, *names: str) -> str:
-    """Cerca il primo nome di colonna trovato nel dict (case-insensitive)."""
+    """Cerca il primo nome colonna trovato nel dict (case-insensitive)."""
     low = {k.lower().strip(): v for k, v in row.items()}
     for name in names:
         v = low.get(name.lower().strip())
@@ -113,7 +112,7 @@ def normalize_tipo(raw: str) -> str | None:
 
 
 def parse_citta_provincia(raw: str):
-    """'Como (CO)' → ('Como', 'CO'). Restituisce (citta, provincia)."""
+    """'Bregnano (CO)' → ('Bregnano', 'CO'). Restituisce (citta, provincia)."""
     raw = clean(raw)
     if not raw:
         return None, None
@@ -123,15 +122,6 @@ def parse_citta_provincia(raw: str):
         citta = raw[:m.start()].strip().rstrip(',').strip()
         return citta or None, prov
     return raw or None, None
-
-
-def parse_indirizzo(raw: str) -> str | None:
-    """Rimuove il CAP a 5 cifre dall'indirizzo."""
-    raw = clean(raw)
-    if not raw:
-        return None
-    cleaned = re.sub(r'\b\d{5}\b', '', raw).strip().strip(',').strip()
-    return cleaned or None
 
 
 def parse_date(raw: str) -> datetime | None:
@@ -166,12 +156,21 @@ def parse_bool(raw: str) -> bool:
     return clean(raw).lower() in ('sì', 'si', 'yes', '1', 'true', 'vero', 'x')
 
 
-def split_nome_cognome(raw: str) -> tuple[str, str]:
+def parse_contatto(raw: str) -> tuple[str, str, str | None]:
+    """
+    'Marco Rossi - Acquisti' → (nome='Marco', cognome='Rossi', ruolo='Acquisti')
+    'Marco Rossi'            → (nome='Marco', cognome='Rossi', ruolo=None)
+    """
     raw = clean(raw)
     if not raw:
-        return '', ''
-    parts = raw.split(None, 1)
-    return parts[0], parts[1] if len(parts) > 1 else ''
+        return '', '', None
+    parts = raw.split(' - ', 1)
+    nome_cognome = parts[0].strip()
+    ruolo = parts[1].strip() if len(parts) > 1 else None
+    name_parts = nome_cognome.split(None, 1)
+    nome = name_parts[0] if name_parts else ''
+    cognome = name_parts[1] if len(name_parts) > 1 else ''
+    return nome, cognome, ruolo
 
 
 # ─── Main ─────────────────────────────────────────────────────────────────────
@@ -187,7 +186,7 @@ def main():
         sys.exit(1)
 
     db = SessionLocal()
-    imported = skipped = errors = 0
+    created = updated = skipped = ct_created = ct_updated = errors = 0
     tipo_unknown: set[str] = set()
 
     try:
@@ -202,19 +201,8 @@ def main():
                     skipped += 1
                     continue
 
-                # ── Duplicate check ──────────────────────────────────────────
-                existing = (
-                    db.query(models.Azienda)
-                    .filter(models.Azienda.ragione_sociale == ragione_sociale)
-                    .first()
-                )
-                if existing:
-                    print(f"  [SKIP] Riga {row_num}: '{ragione_sociale}' già presente (id={existing.id})")
-                    skipped += 1
-                    continue
-
                 try:
-                    # ── Parse campi azienda ──────────────────────────────────
+                    # ── Parse campi comuni ────────────────────────────────────
                     citta_raw = col(row, 'Città', 'Citta')
                     citta, provincia = parse_citta_provincia(citta_raw)
 
@@ -223,56 +211,137 @@ def main():
                     if tipo_raw and tipo == 'altro':
                         tipo_unknown.add(tipo_raw)
 
-                    azienda = models.Azienda(
-                        ragione_sociale      = ragione_sociale,
-                        indirizzo            = parse_indirizzo(col(row, 'Indirizzo')),
-                        citta                = citta,
-                        provincia            = provincia,
-                        tipo                 = tipo,
-                        website              = col(row, 'Sito') or None,
-                        email_aziendale      = col(row, 'Email') or None,
-                        telefono_aziendale   = col(row, 'Telefono') or None,
-                        attivita_descrizione = col(row, 'Attività', 'Attivita') or None,
-                        prodotto_interesse   = col(row, 'Prodotto/Interesse', 'Prodotto') or None,
-                        fonte_lead           = col(row, 'Fonte Lead', 'Fonte') or None,
-                        ordine               = parse_bool(col(row, 'Ordine')),
-                        commessa_euro        = parse_float(col(row, 'Commessa €', 'Commessa')),
+                    # Indirizzo salvato integralmente (incluso CAP se presente)
+                    indirizzo = col(row, 'Indirizzo') or None
+                    website = col(row, 'Sito') or None
+                    email_az = col(row, 'Email') or None
+                    telefono_az = col(row, 'Telefono') or None
+                    attivita_desc = col(row, 'Attività', 'Attivita') or None
+                    prodotto = col(row, 'Prodotto/Interesse', 'Prodotto') or None
+                    fonte = col(row, 'Fonte Lead', 'Fonte') or None
+                    ordine = parse_bool(col(row, 'Ordine'))
+                    commessa = parse_float(col(row, 'Commessa €', 'Commessa'))
+
+                    # ── Upsert azienda ────────────────────────────────────────
+                    existing = (
+                        db.query(models.Azienda)
+                        .filter(models.Azienda.ragione_sociale == ragione_sociale)
+                        .first()
                     )
-                    db.add(azienda)
-                    db.flush()
 
-                    # ── Crea Contatto ────────────────────────────────────────
-                    contatto_raw = col(row, 'Contatto')
-                    contatto_tel = col(row, 'Contatto diretto')
-                    contatto_obj = None
-                    if contatto_raw:
-                        nome, cognome = split_nome_cognome(contatto_raw)
-                        contatto_obj = models.Contatto(
-                            id_azienda = azienda.id,
-                            nome       = nome,
-                            cognome    = cognome,
-                            telefono   = contatto_tel or None,
+                    if existing:
+                        # Aggiorna solo i campi attualmente vuoti
+                        changed = False
+                        def _upd(attr, val):
+                            nonlocal changed
+                            if val and not getattr(existing, attr):
+                                setattr(existing, attr, val)
+                                changed = True
+
+                        _upd('indirizzo',            indirizzo)
+                        _upd('citta',                citta)
+                        _upd('provincia',            provincia)
+                        _upd('website',              website)
+                        _upd('email_aziendale',      email_az)
+                        _upd('telefono_aziendale',   telefono_az)
+                        _upd('attivita_descrizione', attivita_desc)
+                        _upd('prodotto_interesse',   prodotto)
+                        _upd('fonte_lead',           fonte)
+                        _upd('tipo',                 tipo)
+                        if ordine and not existing.ordine:
+                            existing.ordine = True; changed = True
+                        if commessa and not existing.commessa_euro:
+                            existing.commessa_euro = commessa; changed = True
+
+                        # Fix citta/provincia se provincia contiene la città intera
+                        if existing.provincia and len(existing.provincia) > 3:
+                            _, prov_fix = parse_citta_provincia(existing.provincia)
+                            if prov_fix:
+                                existing.provincia = prov_fix
+                                changed = True
+                        if citta and existing.citta and len(existing.citta) > len(citta) + 5:
+                            existing.citta = citta
+                            changed = True
+
+                        azienda = existing
+                        updated += 1
+                        status = 'UPD' if changed else 'NOP'
+                    else:
+                        azienda = models.Azienda(
+                            ragione_sociale      = ragione_sociale,
+                            indirizzo            = indirizzo,
+                            citta                = citta,
+                            provincia            = provincia,
+                            tipo                 = tipo,
+                            website              = website,
+                            email_aziendale      = email_az,
+                            telefono_aziendale   = telefono_az,
+                            attivita_descrizione = attivita_desc,
+                            prodotto_interesse   = prodotto,
+                            fonte_lead           = fonte,
+                            ordine               = ordine,
+                            commessa_euro        = commessa,
                         )
-                        db.add(contatto_obj)
+                        db.add(azienda)
                         db.flush()
+                        created += 1
+                        status = 'NEW'
 
-                    # ── Crea Opportunità ─────────────────────────────────────
-                    stato_raw = col(row, 'Stato')
-                    stato_mapped = STATO_MAP.get(stato_raw.lower())
-                    if stato_mapped:
-                        opp = models.Opportunita(
-                            id_azienda           = azienda.id,
-                            id_contatto          = contatto_obj.id if contatto_obj else None,
-                            titolo               = ragione_sociale,
-                            stato                = stato_mapped,
-                            data_ultimo_contatto = parse_date(col(row, 'Ultimo contatto', 'Ultimo Contatto')),
-                            note                 = col(row, 'Feedback/Note', 'Note') or None,
-                        )
-                        db.add(opp)
+                    # ── Upsert contatto ───────────────────────────────────────
+                    contatto_raw = col(row, 'Contatto')
+                    contatto_tel = col(row, 'Contatto diretto') or None
+                    contatto_obj = None
+
+                    if contatto_raw:
+                        nome, cognome, ruolo = parse_contatto(contatto_raw)
+                        if nome:
+                            existing_ct = (
+                                db.query(models.Contatto)
+                                .filter(
+                                    models.Contatto.id_azienda == azienda.id,
+                                    models.Contatto.nome == nome,
+                                    models.Contatto.cognome == cognome,
+                                )
+                                .first()
+                            )
+                            if existing_ct:
+                                if contatto_tel and not existing_ct.telefono:
+                                    existing_ct.telefono = contatto_tel
+                                if ruolo and not existing_ct.ruolo:
+                                    existing_ct.ruolo = ruolo
+                                contatto_obj = existing_ct
+                                ct_updated += 1
+                            else:
+                                contatto_obj = models.Contatto(
+                                    id_azienda = azienda.id,
+                                    nome       = nome,
+                                    cognome    = cognome,
+                                    ruolo      = ruolo,
+                                    telefono   = contatto_tel,
+                                )
+                                db.add(contatto_obj)
+                                db.flush()
+                                ct_created += 1
+
+                    # ── Crea opportunità solo per nuove aziende ───────────────
+                    if status == 'NEW':
+                        stato_raw = col(row, 'Stato')
+                        stato_mapped = STATO_MAP.get(stato_raw.lower())
+                        if stato_mapped:
+                            opp = models.Opportunita(
+                                id_azienda           = azienda.id,
+                                id_contatto          = contatto_obj.id if contatto_obj else None,
+                                titolo               = ragione_sociale,
+                                stato                = stato_mapped,
+                                data_ultimo_contatto = parse_date(col(row, 'Ultimo contatto', 'Ultimo Contatto')),
+                                prossimo_followup    = parse_date(col(row, 'Prossimo follow-up', 'Prossimo followup')),
+                                offerte_collegate    = col(row, 'Offerte collegate') or None,
+                                note                 = col(row, 'Feedback / Note', 'Feedback/Note', 'Note') or None,
+                            )
+                            db.add(opp)
 
                     db.commit()
-                    imported += 1
-                    print(f"  [OK]   Riga {row_num}: '{ragione_sociale}'")
+                    print(f"  [{status}]  Riga {row_num}: '{ragione_sociale}'")
 
                 except Exception as e:
                     db.rollback()
@@ -283,16 +352,19 @@ def main():
         db.close()
 
     print()
-    print("═" * 55)
-    print(f"  Importate : {imported}")
-    print(f"  Saltate   : {skipped}")
-    print(f"  Errori    : {errors}")
-    print(f"  Totale    : {imported + skipped + errors}")
+    print("=" * 55)
+    print(f"  Nuove aziende  : {created}")
+    print(f"  Aggiornate     : {updated}")
+    print(f"  Saltate vuote  : {skipped}")
+    print(f"  Errori         : {errors}")
+    print(f"  Contatti creati: {ct_created}")
+    print(f"  Contatti aggto : {ct_updated}")
+    print(f"  Totale righe   : {created + updated + skipped + errors}")
     if tipo_unknown:
-        print(f"\n  Settori non mappati (→ 'altro'):")
+        print(f"\n  Settori non mappati (-> 'altro'):")
         for t in sorted(tipo_unknown):
-            print(f"    · {t}")
-    print("═" * 55)
+            print(f"    - {t}")
+    print("=" * 55)
 
 
 if __name__ == '__main__':

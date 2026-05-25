@@ -36,6 +36,7 @@ def _row(o: models.Opportunita) -> dict:
 def list_opportunita(
     stato: Optional[str] = Query(None),
     id_azienda: Optional[int] = Query(None),
+    id_contatto: Optional[int] = Query(None),
     search: Optional[str] = Query(None),
     skip: int = 0,
     limit: int = 500,
@@ -46,6 +47,8 @@ def list_opportunita(
         q = q.filter(models.Opportunita.stato == stato)
     if id_azienda:
         q = q.filter(models.Opportunita.id_azienda == id_azienda)
+    if id_contatto:
+        q = q.filter(models.Opportunita.id_contatto == id_contatto)
     if search:
         q = q.filter(models.Opportunita.titolo.ilike(f"%{search}%"))
     return [_row(o) for o in q.order_by(models.Opportunita.created_at.desc()).offset(skip).limit(limit)]

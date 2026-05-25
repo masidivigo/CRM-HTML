@@ -29,6 +29,7 @@ def _row(a: models.Azienda) -> dict:
         "fonte_lead": a.fonte_lead,
         "ordine": bool(a.ordine),
         "commessa_euro": a.commessa_euro,
+        "etichetta": a.etichetta,
         "created_at": a.created_at.isoformat() if a.created_at else None,
         "n_contatti": len(a.contatti),
         "n_opportunita": len(a.opportunita),
@@ -42,8 +43,9 @@ def list_aziende(
     regione: Optional[str] = Query(None),
     tipo: Optional[str] = Query(None),
     fonte_lead: Optional[str] = Query(None),
+    etichetta: Optional[str] = Query(None),
     skip: int = 0,
-    limit: int = 200,
+    limit: int = 50,
     db: Session = Depends(get_db),
 ):
     q = db.query(models.Azienda)
@@ -57,7 +59,11 @@ def list_aziende(
         q = q.filter(models.Azienda.tipo == tipo)
     if fonte_lead:
         q = q.filter(models.Azienda.fonte_lead == fonte_lead)
-    return [_row(a) for a in q.order_by(models.Azienda.ragione_sociale).offset(skip).limit(limit)]
+    if etichetta:
+        q = q.filter(models.Azienda.etichetta == etichetta)
+    total = q.count()
+    data = [_row(a) for a in q.order_by(models.Azienda.ragione_sociale).offset(skip).limit(limit)]
+    return {"data": data, "total": total}
 
 
 @router.post("/", status_code=201)
@@ -67,6 +73,20 @@ def create_azienda(data: schemas.AziendaCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(obj)
     return _row(obj)
+
+
+@router.get("/check-duplicati")
+def check_duplicati(nome: str = Query(...), db: Session = Depends(get_db)):
+    if len(nome) < 2:
+        return []
+    results = (
+        db.query(models.Azienda)
+        .filter(models.Azienda.ragione_sociale.ilike(f"%{nome}%"))
+        .order_by(models.Azienda.ragione_sociale)
+        .limit(3)
+        .all()
+    )
+    return [{"id": a.id, "ragione_sociale": a.ragione_sociale} for a in results]
 
 
 @router.get("/{id}")

@@ -144,6 +144,34 @@
             <div id="attivita-recenti" class="space-y-2 overflow-y-auto max-h-56"></div>
           </div>
         </div>
+
+        <!-- Mappa Prospect per Provincia -->
+        <div class="mt-6 bg-white rounded-xl shadow-sm border border-slate-100 p-5">
+          <div class="flex items-center justify-between mb-4 flex-wrap gap-3">
+            <h2 class="text-sm font-semibold text-slate-600">Mappa Prospect per Provincia</h2>
+            <select id="prov-regione-filter" class="text-xs border border-slate-200 rounded px-2 py-1 bg-white" onchange="loadProvince()">
+              <option value="">Tutte le regioni</option>
+            </select>
+          </div>
+          <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
+            <div class="h-72"><canvas id="province-chart"></canvas></div>
+            <div class="overflow-x-auto max-h-72 overflow-y-auto">
+              <table class="min-w-full text-xs">
+                <thead class="bg-slate-50 sticky top-0">
+                  <tr>
+                    <th class="th cursor-pointer select-none hover:text-eco-700" onclick="sortProvince('provincia')">Prov <span id="sort-icon-provincia"></span></th>
+                    <th class="th cursor-pointer select-none hover:text-eco-700" onclick="sortProvince('regione')">Regione <span id="sort-icon-regione"></span></th>
+                    <th class="th text-right cursor-pointer select-none hover:text-eco-700" onclick="sortProvince('n_aziende')">Aziende <span id="sort-icon-n_aziende">▼</span></th>
+                    <th class="th text-right cursor-pointer select-none hover:text-eco-700" onclick="sortProvince('n_clienti')">Clienti <span id="sort-icon-n_clienti"></span></th>
+                    <th class="th text-right cursor-pointer select-none hover:text-eco-700" onclick="sortProvince('n_opp_attive')">Opp. <span id="sort-icon-n_opp_attive"></span></th>
+                    <th class="th text-right cursor-pointer select-none hover:text-eco-700" onclick="sortProvince('valore_pipeline')">Pipeline <span id="sort-icon-valore_pipeline"></span></th>
+                  </tr>
+                </thead>
+                <tbody id="province-tbody" class="divide-y divide-slate-50"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- ── AZIENDE ── -->
@@ -210,7 +238,35 @@
               <option value="Altro">Altro</option>
             </select>
           </div>
+          <!-- Etichetta filter palette -->
+          <div class="min-w-0">
+            <label class="label">Etichetta</label>
+            <div class="flex items-center gap-1.5 mt-1.5">
+              <button data-et="" class="az-et-btn w-7 h-7 rounded-full border-2 border-slate-200 bg-slate-100 flex items-center justify-center text-slate-400 text-xs hover:border-slate-400 transition-all" onclick="setAzEtichettaFilter('')" title="Tutte">✕</button>
+              <button data-et="rosso"   class="az-et-btn w-7 h-7 rounded-full border-2 border-transparent hover:opacity-75 transition-all" style="background:#ef4444" onclick="setAzEtichettaFilter('rosso')"  title="Non contattare"></button>
+              <button data-et="giallo"  class="az-et-btn w-7 h-7 rounded-full border-2 border-transparent hover:opacity-75 transition-all" style="background:#f59e0b" onclick="setAzEtichettaFilter('giallo')" title="In trattativa"></button>
+              <button data-et="verde"   class="az-et-btn w-7 h-7 rounded-full border-2 border-transparent hover:opacity-75 transition-all" style="background:#22c55e" onclick="setAzEtichettaFilter('verde')"  title="Cliente"></button>
+              <button data-et="viola"   class="az-et-btn w-7 h-7 rounded-full border-2 border-transparent hover:opacity-75 transition-all" style="background:#8b5cf6" onclick="setAzEtichettaFilter('viola')"  title="Interessante"></button>
+              <button data-et="nero"    class="az-et-btn w-7 h-7 rounded-full border-2 border-transparent hover:opacity-75 transition-all" style="background:#1e293b" onclick="setAzEtichettaFilter('nero')"   title="Persa"></button>
+              <button data-et="blu"     class="az-et-btn w-7 h-7 rounded-full border-2 border-transparent hover:opacity-75 transition-all" style="background:#3b82f6" onclick="setAzEtichettaFilter('blu')"    title="Da valutare"></button>
+            </div>
+          </div>
           <button onclick="resetAzFilter()" class="btn-ghost">Reset</button>
+        </div>
+
+        <!-- Legenda etichette (collassabile) -->
+        <div class="mb-3">
+          <button onclick="toggleLegendaAz()" class="text-xs text-slate-400 hover:text-slate-600 flex items-center gap-1 transition-colors">
+            <span id="legenda-az-arrow" class="text-[10px]">▶</span> Legenda etichette
+          </button>
+          <div id="legenda-az" class="hidden mt-2 bg-white rounded-lg border border-slate-100 px-4 py-3 flex flex-wrap gap-x-6 gap-y-2 text-xs text-slate-600">
+            <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full inline-block flex-shrink-0" style="background:#ef4444"></span>Non contattare</span>
+            <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full inline-block flex-shrink-0" style="background:#f59e0b"></span>In trattativa</span>
+            <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full inline-block flex-shrink-0" style="background:#22c55e"></span>Cliente</span>
+            <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full inline-block flex-shrink-0" style="background:#8b5cf6"></span>Interessante</span>
+            <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full inline-block flex-shrink-0" style="background:#1e293b"></span>Persa</span>
+            <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full inline-block flex-shrink-0" style="background:#3b82f6"></span>Da valutare</span>
+          </div>
         </div>
 
         <!-- Table -->
@@ -219,6 +275,7 @@
             <table class="min-w-full divide-y divide-slate-100 text-sm">
               <thead class="bg-slate-50">
                 <tr>
+                  <th class="p-0 bg-slate-50" style="width:4px;min-width:4px"></th>
                   <th class="th w-10 text-center"><input type="checkbox" id="az-select-all" class="cursor-pointer rounded" onchange="toggleSelectAllAziende(this.checked)"></th>
                   <th class="th">Ragione Sociale</th>
                   <th class="th">P.IVA</th>
@@ -238,16 +295,35 @@
             </table>
           </div>
           <div id="aziende-empty" class="hidden py-12 text-center text-slate-400 text-sm">Nessuna azienda trovata</div>
-          <div id="aziende-count" class="px-4 py-2 text-xs text-slate-400 border-t border-slate-100"></div>
+          <div id="aziende-footer" class="px-4 py-3 border-t border-slate-100 flex items-center justify-between flex-wrap gap-3">
+            <span id="az-page-info" class="text-xs text-slate-400"></span>
+            <div class="flex items-center gap-4">
+              <div class="flex items-center gap-2">
+                <label class="text-xs text-slate-400">Per pagina</label>
+                <select id="az-page-size" class="text-xs border border-slate-200 rounded px-2 py-1 bg-white" onchange="azChangePageSize(this.value)">
+                  <option value="25">25</option>
+                  <option value="50" selected>50</option>
+                  <option value="100">100</option>
+                </select>
+              </div>
+              <div id="az-pagination" class="flex items-center gap-1"></div>
+            </div>
+          </div>
         </div>
 
         <!-- Batch action bar -->
         <div id="az-batch-bar" class="hidden fixed bottom-0 inset-x-0 z-40 bg-white border-t border-slate-200 shadow-xl px-6 py-3 flex items-center justify-between">
           <span class="text-sm text-slate-600 font-medium"><span id="az-batch-n">0</span> aziende selezionate</span>
-          <button onclick="confirmBatchDeleteAziende()" class="bg-red-600 hover:bg-red-700 active:bg-red-800 text-white text-sm font-semibold px-5 py-2 rounded-lg transition-colors flex items-center gap-2">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-            Elimina selezionate (<span id="az-batch-n2">0</span>)
-          </button>
+          <div class="flex items-center gap-3">
+            <button onclick="exportAziendeCSV()" class="bg-sky-600 hover:bg-sky-700 active:bg-sky-800 text-white text-sm font-semibold px-5 py-2 rounded-lg transition-colors flex items-center gap-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+              Esporta CSV
+            </button>
+            <button onclick="confirmBatchDeleteAziende()" class="bg-red-600 hover:bg-red-700 active:bg-red-800 text-white text-sm font-semibold px-5 py-2 rounded-lg transition-colors flex items-center gap-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+              Elimina selezionate (<span id="az-batch-n2">0</span>)
+            </button>
+          </div>
         </div>
       </div>
 
@@ -441,10 +517,53 @@
     <div id="scheda-content" class="flex-1 overflow-y-auto min-h-0"></div>
     <div class="flex justify-between items-center gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50 rounded-b-2xl flex-shrink-0">
       <button onclick="hideScheda()" class="btn-ghost">Chiudi</button>
-      <button id="scheda-edit-btn" class="btn-primary flex items-center gap-2">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-        Modifica
-      </button>
+      <div class="flex items-center gap-2">
+        <button id="scheda-chiamata-btn" class="btn-ghost flex items-center gap-1.5">📞 Log chiamata</button>
+        <button id="scheda-email-btn" class="btn-ghost flex items-center gap-1.5">✉️ Email</button>
+        <button id="scheda-edit-btn" class="btn-primary flex items-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+          Modifica
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ SCHEDA CONTATTO (sola lettura) ═══════════════════ -->
+<div id="scheda-ct-overlay" class="hidden fixed inset-0 bg-black/40 z-40 flex items-center justify-center p-4" onclick="closeSchedaContatto(event)">
+  <div class="modal-enter bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col" onclick="event.stopPropagation()">
+    <div id="scheda-ct-content" class="flex-1 overflow-y-auto min-h-0"></div>
+    <div class="flex justify-between items-center gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50 rounded-b-2xl flex-shrink-0">
+      <button onclick="hideSchedaContatto()" class="btn-ghost">Chiudi</button>
+      <div class="flex items-center gap-2">
+        <button id="scheda-ct-email-btn" class="btn-ghost flex items-center gap-1.5">✉️ Email</button>
+        <button id="scheda-ct-edit-btn" class="btn-primary flex items-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+          Modifica
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ LOG CHIAMATA RAPIDO ═══════════════════ -->
+<div id="log-chiamata-overlay" class="hidden fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+  <div class="modal-enter bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+    <div class="text-base font-semibold text-slate-800 mb-0.5">Log Chiamata</div>
+    <div id="log-chiamata-az" class="text-xs text-slate-400 mb-4 truncate"></div>
+    <div class="space-y-4">
+      <div>
+        <label class="label">Esito chiamata *</label>
+        <textarea id="log-chiamata-esito" class="input h-24 resize-none" placeholder="Cosa è stato detto, decisioni prese…"></textarea>
+      </div>
+      <div>
+        <label class="label">Prossimo follow-up</label>
+        <input id="log-chiamata-followup" type="date" class="input" />
+      </div>
+    </div>
+    <div class="flex justify-end gap-3 mt-5">
+      <button onclick="hideLogChiamata()" class="btn-ghost">Annulla</button>
+      <button onclick="saveLogChiamata()" class="btn-primary">Salva e chiudi</button>
     </div>
   </div>
 </div>
@@ -523,6 +642,14 @@ const TIPO_LABELS = {
 const TIPO_ATT_ICONS = {
   chiamata:'📞', email:'✉️', visita:'🏢', offerta:'📄'
 };
+const ETICHETTA_COLORS = {
+  rosso:'#ef4444', giallo:'#f59e0b', verde:'#22c55e',
+  viola:'#8b5cf6', nero:'#1e293b', blu:'#3b82f6',
+};
+const ETICHETTA_LABELS = {
+  rosso:'Non contattare', giallo:'In trattativa', verde:'Cliente',
+  viola:'Interessante', nero:'Persa', blu:'Da valutare',
+};
 
 let oppChart = null;
 let csvFile = null;
@@ -582,12 +709,64 @@ async function loadView(view){
   try{
     switch(view){
       case 'dashboard': await loadDashboard(); break;
-      case 'aziende':   await loadAziende();   break;
+      case 'aziende':   await Promise.all([loadAziende(), loadAziendeDropdowns()]); break;
       case 'contatti':  await loadContatti();  break;
       case 'pipeline':  await loadPipeline();  break;
       case 'attivita':  await loadAttivita();  break;
     }
   } catch(e){ toast('Errore caricamento: '+e.message,'error'); }
+}
+
+// ═══════════════ ETICHETTE ═══════════════
+
+function _etichettaPaletteHTML(current){
+  const noneActive = !current;
+  const noneShadow = noneActive ? 'box-shadow:0 0 0 2px white,0 0 0 4px #94a3b8;' : '';
+  let html = `<label class="label">Etichetta</label>
+    <div class="flex items-center gap-2 mt-1.5">
+      <button type="button" data-et="" class="modal-et-btn w-8 h-8 rounded-full border-2 flex items-center justify-center text-slate-400 bg-slate-100 border-slate-200 hover:border-slate-400 transition-all" style="${noneShadow}" onclick="selectModalEtichetta('')">✕</button>`;
+  for(const [c, col] of Object.entries(ETICHETTA_COLORS)){
+    const sel = current===c;
+    const shadow = sel ? `box-shadow:0 0 0 2px white,0 0 0 4px ${col};` : '';
+    const check  = sel ? `<span style="color:white;font-size:13px;font-weight:700;line-height:1">✓</span>` : '';
+    html += `<button type="button" data-et="${c}" class="modal-et-btn w-8 h-8 rounded-full border-2 border-transparent hover:opacity-75 transition-all flex items-center justify-center" style="background:${col};${shadow}" onclick="selectModalEtichetta('${c}')" title="${ETICHETTA_LABELS[c]||c}">${check}</button>`;
+  }
+  html += `</div><input type="hidden" id="f-etichetta" value="${current||''}" />`;
+  return html;
+}
+
+function selectModalEtichetta(val){
+  document.getElementById('f-etichetta').value = val||'';
+  document.querySelectorAll('.modal-et-btn').forEach(btn=>{
+    const bval = btn.dataset.et||'';
+    const isSelected = bval === (val||'');
+    if(isSelected){
+      const color = ETICHETTA_COLORS[val]||'#94a3b8';
+      btn.style.boxShadow = `0 0 0 2px white, 0 0 0 4px ${color}`;
+      btn.innerHTML = val ? `<span style="color:white;font-size:13px;font-weight:700;line-height:1">✓</span>` : '✕';
+    } else {
+      btn.style.boxShadow = '';
+      btn.innerHTML = bval ? '' : '✕';
+    }
+  });
+}
+
+function setAzEtichettaFilter(val){
+  azEtichettaFilter = val;
+  document.querySelectorAll('.az-et-btn').forEach(btn=>{ btn.style.boxShadow=''; });
+  const active = [...document.querySelectorAll('.az-et-btn')].find(b=>(b.dataset.et||'')===val);
+  if(active){
+    const color = ETICHETTA_COLORS[val]||'#94a3b8';
+    active.style.boxShadow = `0 0 0 2px white, 0 0 0 4px ${color}`;
+  }
+  azPage=1; loadAziende();
+}
+
+function toggleLegendaAz(){
+  const el = document.getElementById('legenda-az');
+  const arrow = document.getElementById('legenda-az-arrow');
+  const open = el.classList.toggle('hidden');
+  arrow.textContent = open ? '▶' : '▼';
 }
 
 // ═══════════════ DASHBOARD ═══════════════
@@ -632,44 +811,118 @@ async function loadDashboard(){
   // Populate filter dropdowns with values from DB
   populateSelect('az-provincia', kpi.province, 'Tutte');
   populateSelect('az-regione',   kpi.regioni,  'Tutte');
+
+  // Populate province regione filter
+  populateSelect('prov-regione-filter', kpi.regioni, 'Tutte le regioni');
+
+  // Load province stats
+  await loadProvince();
 }
 
 // ═══════════════ AZIENDE ═══════════════
 let aziendeData = [];
 let selectedAziende = new Set();
+let azPage = 1;
+let azPageSize = 50;
+let azTotal = 0;
+let azEtichettaFilter = '';
 
-async function loadAziende(){
+function _buildAzParams(){
+  const params = new URLSearchParams();
   const s = document.getElementById('az-search').value;
   const p = document.getElementById('az-provincia').value;
   const r = document.getElementById('az-regione').value;
   const t = document.getElementById('az-tipo').value;
   const fl = document.getElementById('az-fonte_lead').value;
-  const params = new URLSearchParams();
   if(s) params.set('search',s);
   if(p) params.set('provincia',p);
   if(r) params.set('regione',r);
   if(t) params.set('tipo',t);
   if(fl) params.set('fonte_lead',fl);
-  aziendeData = await API.get('/api/aziende?'+params);
+  if(azEtichettaFilter) params.set('etichetta',azEtichettaFilter);
+  return params;
+}
+
+async function loadAziende(page){
+  if(page !== undefined) azPage = page;
+  const params = _buildAzParams();
+  params.set('skip', (azPage-1)*azPageSize);
+  params.set('limit', azPageSize);
+  const res = await API.get('/api/aziende?'+params);
+  azTotal = res.total;
+  aziendeData = res.data;
   selectedAziende.clear();
   updateAzBatchBar();
   renderAziende(aziendeData);
-  // Populate contatti filter
-  populateSelectObjs('ct-azienda', aziendeData.map(a=>({value:a.id, label:a.ragione_sociale})), 'Tutte');
-  populateSelectObjs('att-azienda', aziendeData.map(a=>({value:a.id, label:a.ragione_sociale})), 'Tutte');
+  renderAzPagination();
+}
+
+async function loadAziendeDropdowns(){
+  const res = await API.get('/api/aziende?limit=1000');
+  const all = res.data;
+  populateSelectObjs('ct-azienda', all.map(a=>({value:a.id, label:a.ragione_sociale})), 'Tutte');
+  populateSelectObjs('att-azienda', all.map(a=>({value:a.id, label:a.ragione_sociale})), 'Tutte');
+}
+
+function renderAzPagination(){
+  const totalPages = Math.ceil(azTotal / azPageSize);
+  const from = azTotal === 0 ? 0 : (azPage-1)*azPageSize + 1;
+  const to = Math.min(azPage*azPageSize, azTotal);
+  document.getElementById('az-page-info').textContent =
+    azTotal === 0 ? 'Nessun risultato' : `${from}–${to} di ${azTotal} lead`;
+
+  // Keep page size select in sync
+  const psel = document.getElementById('az-page-size');
+  if(psel) psel.value = String(azPageSize);
+
+  const container = document.getElementById('az-pagination');
+  if(!container) return;
+  if(totalPages <= 1){ container.innerHTML=''; return; }
+
+  const btnCls = (active, disabled) =>
+    'px-2.5 py-1 text-xs rounded border transition-colors ' +
+    (active   ? 'bg-eco-600 text-white border-eco-600 font-semibold' :
+     disabled ? 'text-slate-300 border-slate-100 cursor-not-allowed' :
+                'text-slate-600 border-slate-200 hover:bg-slate-50');
+
+  const btn = (label, targetPage, disabled, active=false) =>
+    `<button class="${btnCls(active,disabled)}" ${disabled?'disabled':''} ${!disabled?`onclick="loadAziende(${targetPage})"`:''}>${label}</button>`;
+
+  // Page numbers: always show 1, last, current-1…current+1 with ellipsis
+  const show = new Set([1, totalPages, azPage-1, azPage, azPage+1].filter(p=>p>=1&&p<=totalPages));
+  const sorted = [...show].sort((a,b)=>a-b);
+  let nums = '';
+  let prev = 0;
+  for(const p of sorted){
+    if(p > prev+1) nums += `<span class="px-1 text-slate-300 text-xs select-none">…</span>`;
+    nums += btn(p, p, false, p===azPage);
+    prev = p;
+  }
+
+  container.innerHTML =
+    btn('«', 1,          azPage===1,         false) +
+    btn('‹', azPage-1,   azPage===1,         false) +
+    nums +
+    btn('›', azPage+1,   azPage===totalPages, false) +
+    btn('»', totalPages, azPage===totalPages, false);
+}
+
+function azChangePageSize(val){
+  azPageSize = parseInt(val);
+  azPage = 1;
+  loadAziende();
 }
 
 function renderAziende(list){
   const tbody = document.getElementById('aziende-tbody');
   const empty = document.getElementById('aziende-empty');
-  const count = document.getElementById('aziende-count');
   const selAll = document.getElementById('az-select-all');
-  if(!list.length){ tbody.innerHTML=''; empty.classList.remove('hidden'); count.textContent=''; if(selAll){selAll.checked=false;selAll.indeterminate=false;} return; }
+  if(!list.length){ tbody.innerHTML=''; empty.classList.remove('hidden'); if(selAll){selAll.checked=false;selAll.indeterminate=false;} return; }
   empty.classList.add('hidden');
-  count.textContent = `${list.length} aziend${list.length===1?'a':'e'}`;
   if(selAll){ selAll.checked=false; selAll.indeterminate=false; }
   tbody.innerHTML = list.map(a=>`
     <tr class="tr-row">
+      <td class="p-0" style="width:4px;min-width:4px;background-color:${ETICHETTA_COLORS[a.etichetta]||'transparent'}"></td>
       <td class="td text-center w-10"><input type="checkbox" class="az-row-cb cursor-pointer rounded" data-id="${a.id}" onchange="toggleAziendaSelection(${a.id},this.checked)" ${selectedAziende.has(a.id)?'checked':''}></td>
       <td class="td"><button onclick="openAziendaScheda(${a.id})" class="font-medium text-left hover:text-eco-700 hover:underline transition-colors">${esc(a.ragione_sociale)}</button></td>
       <td class="td text-slate-500">${esc(a.partita_iva||'—')}</td>
@@ -682,20 +935,23 @@ function renderAziende(list){
       <td class="td text-center text-slate-400">${a.n_contatti}</td>
       <td class="td text-center text-slate-400">${a.n_opportunita}</td>
       <td class="td text-center">${a.ordine?'<span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-green-100 text-green-600 text-xs font-bold" title="Ha ordinato">✓</span>':'<span class="text-slate-300 text-xs">—</span>'}</td>
-      <td class="td text-right">
+      <td class="td text-right whitespace-nowrap">
+        <button onclick="openLogChiamata(${a.id})" class="icon-btn" title="Log chiamata">📞</button>
+        <button onclick="emailAzienda(${a.id})" class="icon-btn" title="Invia email">✉️</button>
         <button onclick="openAziendaModal(${a.id})" class="icon-btn" title="Modifica">✏️</button>
         <button onclick="confirmDeleteById('azienda',${a.id})" class="icon-btn" title="Elimina">🗑️</button>
       </td>
     </tr>`).join('');
 }
 
-function applyAzFilter(){ loadAziende(); }
+function applyAzFilter(){ azPage=1; loadAziende(); }
 function resetAzFilter(){
   ['az-search','az-provincia','az-regione','az-tipo','az-fonte_lead'].forEach(id=>{
-    const el=document.getElementById(id);
-    el.value='';
+    document.getElementById(id).value='';
   });
-  loadAziende();
+  azEtichettaFilter='';
+  document.querySelectorAll('.az-et-btn').forEach(b=>b.style.boxShadow='');
+  azPage=1; loadAziende();
 }
 
 async function openAziendaModal(id=null){
@@ -709,7 +965,11 @@ async function openAziendaModal(id=null){
       <div class="grid grid-cols-2 gap-4">
         <div class="col-span-2">
           <label class="label">Ragione Sociale *</label>
-          <input id="f-ragione_sociale" class="input" value="${esc(data.ragione_sociale||'')}" placeholder="Es. Acme Impianti S.r.l." />
+          <input id="f-ragione_sociale" class="input" value="${esc(data.ragione_sociale||'')}" placeholder="Es. Acme Impianti S.r.l." ${!isEdit ? 'oninput="_debouncedCheckDup()"' : ''} />
+          <div id="dup-banner" class="hidden mt-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800">
+            ⚠️ Aziende simili già presenti: <span id="dup-list"></span>
+            <button class="ml-2 underline text-amber-700 hover:text-amber-900" onclick="document.getElementById('dup-banner').classList.add('hidden')">Ignora</button>
+          </div>
         </div>
         <div>
           <label class="label">Partita IVA</label>
@@ -778,6 +1038,9 @@ async function openAziendaModal(id=null){
           <input id="f-website" class="input" type="url" value="${esc(data.website||'')}" placeholder="https://www.esempio.it" />
         </div>
         <div class="col-span-2">
+          ${_etichettaPaletteHTML(data.etichetta||null)}
+        </div>
+        <div class="col-span-2">
           <label class="label">Note</label>
           <textarea id="f-note" class="input h-20 resize-none" placeholder="Note libere…">${esc(data.note||'')}</textarea>
         </div>
@@ -805,6 +1068,7 @@ async function openAziendaModal(id=null){
         fonte_lead:           gv('f-fonte_lead')||null,
         ordine:               document.getElementById('f-ordine').checked,
         commessa_euro:        parseFloat(gv('f-commessa_euro'))||null,
+        etichetta:            gv('f-etichetta')||null,
       };
       if(!payload.ragione_sociale){ toast('Ragione sociale obbligatoria','error'); return false; }
       if(isEdit) await API.put(`/api/aziende/${id}`, payload);
@@ -828,7 +1092,7 @@ async function saveModal(){
 async function deleteAzienda(id){
   await API.del(`/api/aziende/${id}`);
   toast('Azienda eliminata');
-  loadAziende();
+  loadAziende(); loadAziendeDropdowns();
 }
 
 // ═══════════════ SCHEDA AZIENDA (sola lettura) ═══════════════
@@ -841,6 +1105,8 @@ async function openAziendaScheda(id){
   ]);
   document.getElementById('scheda-content').innerHTML = buildSchedaHTML(az, contatti, opps);
   document.getElementById('scheda-edit-btn').onclick = ()=>{ hideScheda(); openAziendaModal(id); };
+  document.getElementById('scheda-chiamata-btn').onclick = ()=>{ hideScheda(); _logChiamataAzId=id; document.getElementById('log-chiamata-az').textContent=az.ragione_sociale; document.getElementById('log-chiamata-esito').value=''; document.getElementById('log-chiamata-followup').value=''; document.getElementById('log-chiamata-overlay').classList.remove('hidden'); };
+  document.getElementById('scheda-email-btn').onclick = ()=>emailGenerico(az.email_aziendale, az.ragione_sociale);
   document.getElementById('scheda-overlay').classList.remove('hidden');
 }
 
@@ -859,6 +1125,8 @@ function buildSchedaHTML(az, contatti, opps){
     ? '<span class="badge bg-green-100 text-green-700">✓ Ha ordinato</span>' : '';
   const fonteBadge = az.fonte_lead
     ? `<span class="badge bg-sky-50 text-sky-600">${esc(az.fonte_lead)}</span>` : '';
+  const etichettaBadge = az.etichetta
+    ? `<span class="badge" style="background:${ETICHETTA_COLORS[az.etichetta]}18;color:${ETICHETTA_COLORS[az.etichetta]};border:1px solid ${ETICHETTA_COLORS[az.etichetta]}40">● ${esc(ETICHETTA_LABELS[az.etichetta]||az.etichetta)}</span>` : '';
 
   // Dati azienda: coppie [label, HTML-value]
   const campi = [
@@ -921,7 +1189,7 @@ function buildSchedaHTML(az, contatti, opps){
       <div class="flex items-start justify-between gap-3">
         <div class="flex-1 min-w-0">
           <h2 class="text-2xl font-bold text-slate-800 leading-tight">${esc(az.ragione_sociale)}</h2>
-          <div class="flex flex-wrap items-center gap-2 mt-2">${tipoBadge}${ordineBadge}${fonteBadge}</div>
+          <div class="flex flex-wrap items-center gap-2 mt-2">${etichettaBadge}${tipoBadge}${ordineBadge}${fonteBadge}</div>
         </div>
         <button onclick="hideScheda()" class="text-slate-400 hover:text-slate-600 transition-colors flex-shrink-0 mt-1 p-1">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
@@ -992,7 +1260,289 @@ async function batchDeleteAziende(){
   selectedAziende.clear();
   updateAzBatchBar();
   toast(`${n} aziend${n===1?'a eliminata':'e eliminate'}`);
-  loadAziende();
+  loadAziende(); loadAziendeDropdowns();
+}
+
+// ═══════════════ SCHEDA CONTATTO (sola lettura) ═══════════════
+
+async function openContattoScheda(id){
+  const [ct, opps] = await Promise.all([
+    API.get(`/api/contatti/${id}`),
+    API.get(`/api/opportunita?id_contatto=${id}&limit=100`),
+  ]);
+  document.getElementById('scheda-ct-content').innerHTML = buildSchedaContattoHTML(ct, opps);
+  document.getElementById('scheda-ct-edit-btn').onclick = ()=>{ hideSchedaContatto(); openContattoModal(id); };
+  document.getElementById('scheda-ct-email-btn').onclick = ()=>emailGenerico(ct.email, ct.azienda_nome || `${ct.nome} ${ct.cognome}`);
+  document.getElementById('scheda-ct-overlay').classList.remove('hidden');
+}
+
+function hideSchedaContatto(){
+  document.getElementById('scheda-ct-overlay').classList.add('hidden');
+}
+
+function closeSchedaContatto(e){
+  if(e.target.id==='scheda-ct-overlay') hideSchedaContatto();
+}
+
+function buildSchedaContattoHTML(ct, opps){
+  const initials = (ct.nome||'?')[0].toUpperCase() + (ct.cognome||'?')[0].toUpperCase();
+  const oppHTML = opps.length ? opps.map(o=>`
+    <div class="py-2.5 border-b border-slate-50 last:border-0">
+      <div class="flex items-center gap-2 flex-wrap">
+        <span class="text-sm font-medium text-slate-800">${esc(o.titolo)}</span>
+        <span class="badge ${STATO_COLORS[o.stato]||'bg-slate-100 text-slate-600'}">${esc(o.stato)}</span>
+        ${o.valore_stimato?`<span class="text-xs font-semibold text-eco-700">${formatEuro(o.valore_stimato)}</span>`:''}
+        ${o.prossimo_followup?`<span class="text-xs text-slate-400">Follow-up: ${fmtDate(o.prossimo_followup)}</span>`:''}
+      </div>
+      ${o.note?`<p class="text-xs text-slate-500 mt-1 line-clamp-2">${esc(o.note)}</p>`:''}
+    </div>`).join('')
+    : '<p class="text-sm text-slate-400 py-1">Nessuna opportunità collegata</p>';
+
+  const noteHTML = ct.note ? `
+    <div>
+      <h3 class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Note</h3>
+      <p class="text-sm text-slate-700 whitespace-pre-wrap bg-slate-50 rounded-lg p-3 border border-slate-100">${esc(ct.note)}</p>
+    </div>` : '';
+
+  return `
+    <div class="px-6 pt-6 pb-5 border-b border-slate-100">
+      <div class="flex items-start justify-between gap-3">
+        <div class="flex items-center gap-4">
+          <div class="w-14 h-14 rounded-full bg-eco-100 flex items-center justify-center text-lg font-bold text-eco-700 flex-shrink-0">${esc(initials)}</div>
+          <div>
+            <h2 class="text-2xl font-bold text-slate-800 leading-tight">${esc(ct.nome)} ${esc(ct.cognome)}</h2>
+            ${ct.ruolo?`<p class="text-sm text-slate-500 mt-0.5">${esc(ct.ruolo)}</p>`:''}
+            ${ct.azienda_nome?`<button onclick="hideSchedaContatto();openAziendaScheda(${ct.id_azienda})" class="mt-1 badge bg-eco-50 text-eco-700 hover:bg-eco-100 transition-colors">${esc(ct.azienda_nome)}</button>`:''}
+          </div>
+        </div>
+        <button onclick="hideSchedaContatto()" class="text-slate-400 hover:text-slate-600 transition-colors flex-shrink-0 mt-1 p-1">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="px-6 py-5 space-y-6">
+      <div>
+        <h3 class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Contatti</h3>
+        <div class="space-y-2">
+          ${ct.telefono?`<div class="flex items-center gap-2"><span class="text-xs text-slate-400 w-16">Telefono</span><a href="tel:${esc(ct.telefono)}" class="text-sm text-eco-700 hover:underline">${esc(ct.telefono)}</a></div>`:''}
+          ${ct.email?`<div class="flex items-center gap-2"><span class="text-xs text-slate-400 w-16">Email</span><a href="mailto:${esc(ct.email)}" class="text-sm text-eco-700 hover:underline">${esc(ct.email)}</a></div>`:''}
+          ${!ct.telefono&&!ct.email?'<p class="text-sm text-slate-400">Nessun recapito</p>':''}
+        </div>
+      </div>
+      <div>
+        <h3 class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Opportunità collegate <span class="text-slate-400 font-normal normal-case">(${opps.length})</span></h3>
+        ${oppHTML}
+      </div>
+      ${noteHTML}
+    </div>`;
+}
+
+// ═══════════════ LOG CHIAMATA RAPIDO ═══════════════
+
+let _logChiamataAzId = null;
+
+function openLogChiamata(azId){
+  const az = aziendeData.find(a=>a.id===azId);
+  _logChiamataAzId = azId;
+  document.getElementById('log-chiamata-az').textContent = az ? az.ragione_sociale : `Azienda #${azId}`;
+  document.getElementById('log-chiamata-esito').value = '';
+  document.getElementById('log-chiamata-followup').value = '';
+  document.getElementById('log-chiamata-overlay').classList.remove('hidden');
+  setTimeout(()=>document.getElementById('log-chiamata-esito').focus(), 100);
+}
+
+function hideLogChiamata(){
+  document.getElementById('log-chiamata-overlay').classList.add('hidden');
+}
+
+async function saveLogChiamata(){
+  const esito = document.getElementById('log-chiamata-esito').value.trim();
+  if(!esito){ toast("Inserisci l'esito della chiamata",'error'); return; }
+  const followup = document.getElementById('log-chiamata-followup').value;
+  const now = new Date().toISOString();
+  await API.post('/api/attivita', {
+    id_azienda: _logChiamataAzId,
+    tipo: 'chiamata',
+    data: now,
+    esito,
+  });
+  if(followup){
+    const opps = await API.get(`/api/opportunita?id_azienda=${_logChiamataAzId}&limit=10`);
+    const active = opps.filter(o=>!['perso','cliente'].includes(o.stato));
+    if(active.length){
+      await API.put(`/api/opportunita/${active[0].id}`, {
+        prossimo_followup: followup,
+        data_ultimo_contatto: now,
+      });
+    }
+  }
+  hideLogChiamata();
+  toast('Chiamata registrata');
+  if(getCurrentView()==='dashboard') loadDashboard();
+}
+
+// ═══════════════ EMAIL DIRETTA ═══════════════
+
+function emailAzienda(azId){
+  const az = aziendeData.find(a=>a.id===azId);
+  if(!az){ return; }
+  if(!az.email_aziendale){ toast('Nessuna email registrata per questa azienda','error'); return; }
+  const subj = encodeURIComponent(`Ecotrentino S.r.l. — ${az.ragione_sociale}`);
+  window.location.href = `mailto:${az.email_aziendale}?subject=${subj}`;
+}
+
+function emailGenerico(email, label){
+  if(!email){ toast(`Nessuna email registrata per ${label}`,'error'); return; }
+  const subj = encodeURIComponent(`Ecotrentino S.r.l. — ${label}`);
+  window.location.href = `mailto:${email}?subject=${subj}`;
+}
+
+// ═══════════════ DUPLICATI INTELLIGENTI ═══════════════
+
+function _debounce(fn, ms){ let t; return function(...a){ clearTimeout(t); t=setTimeout(()=>fn.apply(this,a),ms); }; }
+const _debouncedCheckDup = _debounce(checkDuplicatiAzienda, 450);
+
+async function checkDuplicatiAzienda(){
+  const val = (document.getElementById('f-ragione_sociale')?.value||'').trim();
+  const banner = document.getElementById('dup-banner');
+  if(!banner) return;
+  if(val.length < 3){ banner.classList.add('hidden'); return; }
+  const results = await API.get(`/api/aziende/check-duplicati?nome=${encodeURIComponent(val)}`);
+  if(!results.length){ banner.classList.add('hidden'); return; }
+  document.getElementById('dup-list').innerHTML = results.map(a=>
+    `<button class="font-semibold underline hover:text-amber-900 mr-1" onclick="hideModal();openAziendaScheda(${a.id})">${esc(a.ragione_sociale)}</button>`
+  ).join('');
+  banner.classList.remove('hidden');
+}
+
+// ═══════════════ STATISTICHE PROVINCE ═══════════════
+
+let provinceData = [];
+let provinceSortCol = 'n_aziende';
+let provinceSortAsc = false;
+let provinceChart = null;
+
+async function loadProvince(){
+  const regione = document.getElementById('prov-regione-filter')?.value || '';
+  const url = '/api/dashboard/province' + (regione ? `?regione=${encodeURIComponent(regione)}` : '');
+  provinceData = await API.get(url);
+  renderProvinceTable();
+  renderProvinceChart();
+}
+
+function sortProvince(col){
+  if(provinceSortCol === col) provinceSortAsc = !provinceSortAsc;
+  else { provinceSortCol = col; provinceSortAsc = col === 'provincia' || col === 'regione'; }
+  renderProvinceTable();
+}
+
+function renderProvinceTable(){
+  // Update sort icons
+  ['provincia','regione','n_aziende','n_clienti','n_opp_attive','valore_pipeline'].forEach(c=>{
+    const el = document.getElementById(`sort-icon-${c}`);
+    if(el) el.textContent = c === provinceSortCol ? (provinceSortAsc ? '▲' : '▼') : '';
+  });
+
+  const sorted = [...provinceData].sort((a,b)=>{
+    const av = a[provinceSortCol], bv = b[provinceSortCol];
+    if(typeof av === 'string') return provinceSortAsc ? av.localeCompare(bv) : bv.localeCompare(av);
+    return provinceSortAsc ? av - bv : bv - av;
+  });
+
+  const tbody = document.getElementById('province-tbody');
+  if(!tbody) return;
+  tbody.innerHTML = sorted.map(r=>`
+    <tr class="tr-row">
+      <td class="td font-mono font-semibold">${esc(r.provincia)}</td>
+      <td class="td text-slate-500 text-xs">${esc(r.regione||'—')}</td>
+      <td class="td text-right font-medium">${r.n_aziende}</td>
+      <td class="td text-right text-eco-700">${r.n_clienti||'—'}</td>
+      <td class="td text-right text-amber-600">${r.n_opp_attive||'—'}</td>
+      <td class="td text-right text-blue-600">${r.valore_pipeline ? formatEuro(r.valore_pipeline) : '—'}</td>
+    </tr>`).join('');
+}
+
+function renderProvinceChart(){
+  const top15 = [...provinceData].sort((a,b)=>b.n_aziende-a.n_aziende).slice(0,15);
+  const ctx = document.getElementById('province-chart');
+  if(!ctx) return;
+  if(provinceChart) provinceChart.destroy();
+  provinceChart = new Chart(ctx.getContext('2d'),{
+    type:'bar',
+    data:{
+      labels: top15.map(r=>r.provincia),
+      datasets:[{
+        label:'Aziende',
+        data: top15.map(r=>r.n_aziende),
+        backgroundColor:'#16a34a',
+        borderRadius:4,
+        borderSkipped:false,
+      },{
+        label:'Clienti',
+        data: top15.map(r=>r.n_clienti),
+        backgroundColor:'#bbf7d0',
+        borderRadius:4,
+        borderSkipped:false,
+      }]
+    },
+    options:{
+      indexAxis:'y',
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:true, position:'top', labels:{boxWidth:12,font:{size:11}}} },
+      scales:{
+        x:{beginAtZero:true, ticks:{stepSize:1}, grid:{color:'#f1f5f9'}},
+        y:{grid:{display:false}, ticks:{font:{size:11}}}
+      }
+    }
+  });
+}
+
+// ═══════════════ EXPORT CSV AZIENDE ═══════════════
+
+async function exportAziendeCSV(){
+  if(!selectedAziende.size) return;
+  const opps = await API.get('/api/opportunita?limit=2000');
+  const oppByAz = {};
+  for(const o of opps){
+    if(!oppByAz[o.id_azienda]) oppByAz[o.id_azienda] = [];
+    oppByAz[o.id_azienda].push(o);
+  }
+  const rows = aziendeData.filter(a=>selectedAziende.has(a.id)).map(a=>{
+    const azOpps = oppByAz[a.id]||[];
+    const lastOpp = azOpps.sort((x,y)=>(y.data_ultimo_contatto||'').localeCompare(x.data_ultimo_contatto||''))[0];
+    const cols = [
+      a.ragione_sociale,
+      a.partita_iva||'',
+      a.attivita_descrizione||'',
+      a.indirizzo||'',
+      a.citta||'',
+      a.provincia||'',
+      a.regione||'',
+      a.website||'',
+      a.email_aziendale||'',
+      a.telefono_aziendale||'',
+      a.tipo||'',
+      a.prodotto_interesse||'',
+      a.fonte_lead||'',
+      lastOpp ? lastOpp.stato : '',
+      lastOpp ? (lastOpp.data_ultimo_contatto ? fmtDate(lastOpp.data_ultimo_contatto) : '') : '',
+      lastOpp ? (lastOpp.prossimo_followup ? fmtDate(lastOpp.prossimo_followup) : '') : '',
+      a.note||'',
+      a.ordine ? 'Sì' : 'No',
+      a.commessa_euro!=null ? String(a.commessa_euro).replace('.',',') : '',
+    ];
+    return cols.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(';');
+  });
+  const header = ['Ragione Sociale','P.IVA','Attività','Indirizzo','Città','Provincia','Regione','Sito Web','Email','Telefono','Tipo','Prodotto/Interesse','Fonte Lead','Stato Opportunità','Ultimo Contatto','Prossimo Follow-up','Note','Ordine','Commessa €']
+    .map(h=>'"'+h+'"').join(';');
+  const csv = '﻿' + header + '\n' + rows.join('\n');
+  const today = new Date().toISOString().slice(0,10);
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv;charset=utf-8;'}));
+  a.download = `ecotrentino_prospect_${today}.csv`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+  toast(`Esportate ${selectedAziende.size} aziende in CSV`);
 }
 
 // ═══════════════ CONTATTI ═══════════════
@@ -1013,7 +1563,7 @@ function renderContatti(list){
   empty.classList.add('hidden');
   tbody.innerHTML = list.map(c=>`
     <tr class="tr-row">
-      <td class="td font-medium">${esc(c.nome)} ${esc(c.cognome)}</td>
+      <td class="td font-medium"><button onclick="openContattoScheda(${c.id})" class="text-left hover:text-eco-700 hover:underline transition-colors">${esc(c.nome)} ${esc(c.cognome)}</button></td>
       <td class="td text-slate-500">${esc(c.ruolo||'—')}</td>
       <td class="td">
         <button class="text-eco-700 hover:underline text-sm" onclick="navigate('aziende')">${esc(c.azienda_nome||'—')}</button>
@@ -1034,7 +1584,7 @@ async function openContattoModal(id=null){
   const isEdit = id !== null;
   let data = {};
   if(isEdit) data = await API.get(`/api/contatti/${id}`);
-  const aziende = await API.get('/api/aziende?limit=500');
+  const aziende = (await API.get('/api/aziende?limit=1000')).data;
 
   document.getElementById('modal-title').textContent = isEdit ? 'Modifica Contatto' : 'Nuovo Contatto';
   document.getElementById('modal-body').innerHTML = `
@@ -1169,7 +1719,7 @@ async function openOppModal(id=null, defaultStato='freddo'){
   const isEdit = id !== null;
   let data = {};
   if(isEdit) data = await API.get(`/api/opportunita/${id}`);
-  const aziende = await API.get('/api/aziende?limit=500');
+  const aziende = (await API.get('/api/aziende?limit=1000')).data;
 
   document.getElementById('modal-title').textContent = isEdit ? 'Modifica Opportunità' : 'Nuova Opportunità';
   document.getElementById('modal-body').innerHTML = `
@@ -1299,7 +1849,7 @@ async function openAttivitaModal(id=null){
   const isEdit = id !== null;
   let data = {};
   if(isEdit) data = await API.get(`/api/attivita/${id}`);
-  const aziende = await API.get('/api/aziende?limit=500');
+  const aziende = (await API.get('/api/aziende?limit=1000')).data;
   const opps = data.id_azienda ? await API.get(`/api/opportunita?id_azienda=${data.id_azienda}`) : [];
 
   document.getElementById('modal-title').textContent = isEdit ? 'Modifica Attività' : 'Nuova Attività';
