@@ -20,6 +20,8 @@ def _row(o: models.Opportunita) -> dict:
         "valore_stimato": o.valore_stimato,
         "data_primo_contatto": o.data_primo_contatto.isoformat() if o.data_primo_contatto else None,
         "data_ultimo_contatto": o.data_ultimo_contatto.isoformat() if o.data_ultimo_contatto else None,
+        "prossimo_followup": o.prossimo_followup.isoformat() if o.prossimo_followup else None,
+        "offerte_collegate": o.offerte_collegate,
         "note": o.note,
         "created_at": o.created_at.isoformat() if o.created_at else None,
         "azienda_nome": o.azienda.ragione_sociale if o.azienda else None,

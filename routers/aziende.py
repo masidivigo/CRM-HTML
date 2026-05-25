@@ -24,6 +24,11 @@ def _row(a: models.Azienda) -> dict:
         "telefono_aziendale": a.telefono_aziendale,
         "website": a.website,
         "note": a.note,
+        "attivita_descrizione": a.attivita_descrizione,
+        "prodotto_interesse": a.prodotto_interesse,
+        "fonte_lead": a.fonte_lead,
+        "ordine": bool(a.ordine),
+        "commessa_euro": a.commessa_euro,
         "created_at": a.created_at.isoformat() if a.created_at else None,
         "n_contatti": len(a.contatti),
         "n_opportunita": len(a.opportunita),
@@ -36,6 +41,7 @@ def list_aziende(
     provincia: Optional[str] = Query(None),
     regione: Optional[str] = Query(None),
     tipo: Optional[str] = Query(None),
+    fonte_lead: Optional[str] = Query(None),
     skip: int = 0,
     limit: int = 200,
     db: Session = Depends(get_db),
@@ -49,6 +55,8 @@ def list_aziende(
         q = q.filter(models.Azienda.regione == regione)
     if tipo:
         q = q.filter(models.Azienda.tipo == tipo)
+    if fonte_lead:
+        q = q.filter(models.Azienda.fonte_lead == fonte_lead)
     return [_row(a) for a in q.order_by(models.Azienda.ragione_sociale).offset(skip).limit(limit)]
 
 

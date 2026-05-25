@@ -1,6 +1,6 @@
 from pydantic import BaseModel, ConfigDict
 from typing import Optional
-from datetime import datetime
+from datetime import datetime, date
 
 
 # ─── Azienda ────────────────────────────────────────────────────────────────
@@ -18,6 +18,11 @@ class AziendaCreate(BaseModel):
     telefono_aziendale: Optional[str] = None
     website: Optional[str] = None
     note: Optional[str] = None
+    attivita_descrizione: Optional[str] = None
+    prodotto_interesse: Optional[str] = None
+    fonte_lead: Optional[str] = None
+    ordine: Optional[bool] = False
+    commessa_euro: Optional[float] = None
 
 
 class AziendaUpdate(BaseModel):
@@ -33,6 +38,11 @@ class AziendaUpdate(BaseModel):
     telefono_aziendale: Optional[str] = None
     website: Optional[str] = None
     note: Optional[str] = None
+    attivita_descrizione: Optional[str] = None
+    prodotto_interesse: Optional[str] = None
+    fonte_lead: Optional[str] = None
+    ordine: Optional[bool] = None
+    commessa_euro: Optional[float] = None
 
 
 # ─── Contatto ────────────────────────────────────────────────────────────────
@@ -67,6 +77,8 @@ class OpportunitaCreate(BaseModel):
     valore_stimato: Optional[float] = None
     data_primo_contatto: Optional[datetime] = None
     data_ultimo_contatto: Optional[datetime] = None
+    prossimo_followup: Optional[date] = None
+    offerte_collegate: Optional[str] = None
     note: Optional[str] = None
 
 
@@ -78,6 +90,8 @@ class OpportunitaUpdate(BaseModel):
     valore_stimato: Optional[float] = None
     data_primo_contatto: Optional[datetime] = None
     data_ultimo_contatto: Optional[datetime] = None
+    prossimo_followup: Optional[date] = None
+    offerte_collegate: Optional[str] = None
     note: Optional[str] = None
 
 

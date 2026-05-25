@@ -199,6 +199,17 @@
               <option value="altro">Altro</option>
             </select>
           </div>
+          <div class="min-w-40">
+            <label class="label">Fonte Lead</label>
+            <select id="az-fonte_lead" class="input" onchange="applyAzFilter()">
+              <option value="">Tutte</option>
+              <option value="Sito">Sito</option>
+              <option value="Spider">Spider</option>
+              <option value="Fiera">Fiera</option>
+              <option value="Passaparola">Passaparola</option>
+              <option value="Altro">Altro</option>
+            </select>
+          </div>
           <button onclick="resetAzFilter()" class="btn-ghost">Reset</button>
         </div>
 
@@ -219,6 +230,7 @@
                   <th class="th">Web</th>
                   <th class="th">Contatti</th>
                   <th class="th">Opp.</th>
+                  <th class="th text-center">Ordine</th>
                   <th class="th text-right">Azioni</th>
                 </tr>
               </thead>
@@ -617,11 +629,13 @@ async function loadAziende(){
   const p = document.getElementById('az-provincia').value;
   const r = document.getElementById('az-regione').value;
   const t = document.getElementById('az-tipo').value;
+  const fl = document.getElementById('az-fonte_lead').value;
   const params = new URLSearchParams();
   if(s) params.set('search',s);
   if(p) params.set('provincia',p);
   if(r) params.set('regione',r);
   if(t) params.set('tipo',t);
+  if(fl) params.set('fonte_lead',fl);
   aziendeData = await API.get('/api/aziende?'+params);
   selectedAziende.clear();
   updateAzBatchBar();
@@ -653,6 +667,7 @@ function renderAziende(list){
       <td class="td text-center">${a.website?`<a href="${esc(a.website)}" target="_blank" rel="noopener" title="${esc(a.website)}" class="inline-flex items-center text-eco-600 hover:text-eco-800"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg></a>`:'—'}</td>
       <td class="td text-center text-slate-400">${a.n_contatti}</td>
       <td class="td text-center text-slate-400">${a.n_opportunita}</td>
+      <td class="td text-center">${a.ordine?'<span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-green-100 text-green-600 text-xs font-bold" title="Ha ordinato">✓</span>':'<span class="text-slate-300 text-xs">—</span>'}</td>
       <td class="td text-right">
         <button onclick="openAziendaModal(${a.id})" class="icon-btn" title="Modifica">✏️</button>
         <button onclick="confirmDeleteById('azienda',${a.id})" class="icon-btn" title="Elimina">🗑️</button>
@@ -662,7 +677,7 @@ function renderAziende(list){
 
 function applyAzFilter(){ loadAziende(); }
 function resetAzFilter(){
-  ['az-search','az-provincia','az-regione','az-tipo'].forEach(id=>{
+  ['az-search','az-provincia','az-regione','az-tipo','az-fonte_lead'].forEach(id=>{
     const el=document.getElementById(id);
     el.value='';
   });
@@ -721,6 +736,29 @@ async function openAziendaModal(id=null){
           <label class="label">Email Aziendale</label>
           <input id="f-email_aziendale" class="input" type="email" value="${esc(data.email_aziendale||'')}" placeholder="info@azienda.it" />
         </div>
+        <div>
+          <label class="label">Fonte Lead</label>
+          <select id="f-fonte_lead" class="input">
+            <option value="">— Seleziona —</option>
+            ${['Sito','Spider','Fiera','Passaparola','Altro'].map(v=>`<option value="${v}" ${data.fonte_lead===v?'selected':''}>${v}</option>`).join('')}
+          </select>
+        </div>
+        <div class="col-span-2">
+          <label class="label">Attività / Descrizione Settore</label>
+          <input id="f-attivita_descrizione" class="input" value="${esc(data.attivita_descrizione||'')}" placeholder="Es. Filtrazione Aria / Impianti verniciatura" />
+        </div>
+        <div>
+          <label class="label">Prodotto / Interesse</label>
+          <input id="f-prodotto_interesse" class="input" value="${esc(data.prodotto_interesse||'')}" placeholder="Es. Tuberia e Filtro" />
+        </div>
+        <div>
+          <label class="label">Commessa (€)</label>
+          <input id="f-commessa_euro" class="input" type="number" min="0" step="100" value="${data.commessa_euro||''}" placeholder="0" />
+        </div>
+        <div class="col-span-2 flex items-center gap-3 py-1 border-t border-slate-100 mt-1 pt-3">
+          <input id="f-ordine" type="checkbox" class="w-4 h-4 cursor-pointer rounded accent-green-600" ${data.ordine?'checked':''} />
+          <label for="f-ordine" class="text-sm font-medium text-slate-700 cursor-pointer select-none">Ha già effettuato un ordine</label>
+        </div>
         <div class="col-span-2">
           <label class="label">Sito Web</label>
           <input id="f-website" class="input" type="url" value="${esc(data.website||'')}" placeholder="https://www.esempio.it" />
@@ -736,18 +774,23 @@ async function openAziendaModal(id=null){
     type: 'azienda', id,
     async onSave(){
       const payload = {
-        ragione_sociale: gv('f-ragione_sociale'),
-        partita_iva:     gv('f-partita_iva')||null,
-        indirizzo:       gv('f-indirizzo')||null,
-        citta:           gv('f-citta')||null,
-        provincia:       (gv('f-provincia')||'').toUpperCase()||null,
-        regione:         gv('f-regione')||null,
-        codice_ateco:        gv('f-codice_ateco')||null,
-        tipo:                gv('f-tipo')||null,
-        telefono_aziendale:  gv('f-telefono_aziendale')||null,
-        email_aziendale:     gv('f-email_aziendale')||null,
-        website:             gv('f-website')||null,
-        note:                gv('f-note')||null,
+        ragione_sociale:      gv('f-ragione_sociale'),
+        partita_iva:          gv('f-partita_iva')||null,
+        indirizzo:            gv('f-indirizzo')||null,
+        citta:                gv('f-citta')||null,
+        provincia:            (gv('f-provincia')||'').toUpperCase()||null,
+        regione:              gv('f-regione')||null,
+        codice_ateco:         gv('f-codice_ateco')||null,
+        tipo:                 gv('f-tipo')||null,
+        telefono_aziendale:   gv('f-telefono_aziendale')||null,
+        email_aziendale:      gv('f-email_aziendale')||null,
+        website:              gv('f-website')||null,
+        note:                 gv('f-note')||null,
+        attivita_descrizione: gv('f-attivita_descrizione')||null,
+        prodotto_interesse:   gv('f-prodotto_interesse')||null,
+        fonte_lead:           gv('f-fonte_lead')||null,
+        ordine:               document.getElementById('f-ordine').checked,
+        commessa_euro:        parseFloat(gv('f-commessa_euro'))||null,
       };
       if(!payload.ragione_sociale){ toast('Ragione sociale obbligatoria','error'); return false; }
       if(isEdit) await API.put(`/api/aziende/${id}`, payload);
@@ -1036,6 +1079,14 @@ async function openOppModal(id=null, defaultStato='freddo'){
         <label class="label">Ultimo Contatto</label>
         <input id="f-data_ultimo_contatto" class="input" type="date" value="${fmtDateInput(data.data_ultimo_contatto)}" />
       </div>
+      <div>
+        <label class="label">Prossimo Follow-up</label>
+        <input id="f-prossimo_followup" class="input" type="date" value="${fmtDateInput(data.prossimo_followup)}" />
+      </div>
+      <div>
+        <label class="label">Offerte Collegate</label>
+        <input id="f-offerte_collegate" class="input" value="${esc(data.offerte_collegate||'')}" placeholder="Es. OFF-2024-001" />
+      </div>
       <div class="col-span-2">
         <label class="label">Note</label>
         <textarea id="f-note" class="input h-20 resize-none">${esc(data.note||'')}</textarea>
@@ -1056,6 +1107,8 @@ async function openOppModal(id=null, defaultStato='freddo'){
         valore_stimato:       parseFloat(gv('f-valore_stimato'))||null,
         data_primo_contatto:  gv('f-data_primo_contatto')||null,
         data_ultimo_contatto: gv('f-data_ultimo_contatto')||null,
+        prossimo_followup:    gv('f-prossimo_followup')||null,
+        offerte_collegate:    gv('f-offerte_collegate')||null,
         note:                 gv('f-note')||null,
       };
       if(!payload.titolo){ toast('Titolo obbligatorio','error'); return false; }

@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Text, func
+from sqlalchemy import Column, Integer, String, Float, DateTime, Date, ForeignKey, Text, Boolean, func
 from sqlalchemy.orm import relationship
 from database import Base
 
@@ -14,11 +14,16 @@ class Azienda(Base):
     provincia = Column(String(2))
     regione = Column(String(50))
     codice_ateco = Column(String(20))
-    tipo = Column(String(50))  # impiantista / engineering / rivenditore / altro
+    tipo = Column(String(50))
     email_aziendale = Column(String(255))
     telefono_aziendale = Column(String(20))
     website = Column(Text)
     note = Column(Text)
+    attivita_descrizione = Column(String(255))
+    prodotto_interesse = Column(String(255))
+    fonte_lead = Column(String(50))
+    ordine = Column(Boolean, default=False)
+    commessa_euro = Column(Float)
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, onupdate=func.now())
 
@@ -51,10 +56,12 @@ class Opportunita(Base):
     id_azienda = Column(Integer, ForeignKey("aziende.id"), nullable=False)
     id_contatto = Column(Integer, ForeignKey("contatti.id"), nullable=True)
     titolo = Column(String(255), nullable=False)
-    stato = Column(String(50), default="freddo")  # freddo/contattato/trattativa/offerta/cliente/perso
+    stato = Column(String(50), default="freddo")
     valore_stimato = Column(Float)
     data_primo_contatto = Column(DateTime)
     data_ultimo_contatto = Column(DateTime)
+    prossimo_followup = Column(Date)
+    offerte_collegate = Column(String(255))
     note = Column(Text)
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, onupdate=func.now())
