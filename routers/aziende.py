@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Body, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import Optional, List
 from pydantic import BaseModel
@@ -94,7 +94,7 @@ class _BatchDeleteRequest(BaseModel):
 
 
 @router.delete("/batch")
-def batch_delete_aziende(data: _BatchDeleteRequest, db: Session = Depends(get_db)):
+def batch_delete_aziende(data: _BatchDeleteRequest = Body(...), db: Session = Depends(get_db)):
     if not data.ids:
         return {"ok": True, "deleted": 0}
     db.query(models.Azienda).filter(models.Azienda.id.in_(data.ids)).delete(synchronize_session=False)
