@@ -25,7 +25,7 @@ def _row(c: models.Contatto) -> dict:
     }
 
 
-@router.get("/")
+@router.get("")
 def list_contatti(
     id_azienda: Optional[int] = Query(None),
     search: Optional[str] = Query(None),
@@ -47,7 +47,7 @@ def list_contatti(
     return [_row(c) for c in q.order_by(models.Contatto.cognome).offset(skip).limit(limit)]
 
 
-@router.post("/", status_code=201)
+@router.post("", status_code=201)
 def create_contatto(data: schemas.ContattoCreate, db: Session = Depends(get_db)):
     if not db.query(models.Azienda).filter(models.Azienda.id == data.id_azienda).first():
         raise HTTPException(404, "Azienda non trovata")

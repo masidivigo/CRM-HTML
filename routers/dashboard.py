@@ -1,8 +1,9 @@
 from collections import defaultdict
+from datetime import date
 from typing import Optional
 
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy import func
+from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 import models
 from database import get_db
@@ -140,7 +141,11 @@ def global_search(q: str, db: Session = Depends(get_db)):
     ).limit(8).all()
 
     contatti = db.query(models.Contatto).filter(
-        models.Contatto.cognome.ilike(f"%{q}%")
+        or_(
+            models.Contatto.nome.ilike(f"%{q}%"),
+            models.Contatto.cognome.ilike(f"%{q}%"),
+            models.Contatto.email.ilike(f"%{q}%"),
+        )
     ).limit(5).all()
 
     opportunita = db.query(models.Opportunita).filter(
@@ -152,3 +157,29 @@ def global_search(q: str, db: Session = Depends(get_db)):
         "contatti": [{"id": c.id, "label": f"{c.nome} {c.cognome}", "azienda": c.azienda.ragione_sociale if c.azienda else ""} for c in contatti],
         "opportunita": [{"id": o.id, "label": o.titolo, "stato": o.stato} for o in opportunita],
     }
+
+
+@router.get("/followup-scaduti")
+def get_followup_scaduti(db: Session = Depends(get_db)):
+    oggi = date.today()
+    opps = (
+        db.query(models.Opportunita)
+        .filter(
+            models.Opportunita.prossimo_followup.isnot(None),
+            models.Opportunita.prossimo_followup <= oggi,
+            models.Opportunita.stato.notin_(["cliente", "perso"]),
+        )
+        .order_by(models.Opportunita.prossimo_followup)
+        .all()
+    )
+    return [
+        {
+            "id": o.id,
+            "id_azienda": o.id_azienda,
+            "titolo": o.titolo,
+            "stato": o.stato,
+            "prossimo_followup": o.prossimo_followup.isoformat(),
+            "azienda_nome": o.azienda.ragione_sociale if o.azienda else None,
+        }
+        for o in opps
+    ]

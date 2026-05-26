@@ -14,7 +14,7 @@ from routers import aziende, attivita, contatti, dashboard, import_csv, opportun
 
 models.Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="Ecotrentino CRM", version="1.0.0", docs_url="/api/docs")
+app = FastAPI(title="Ecotrentino CRM", version="1.0.0", docs_url="/api/docs", redirect_slashes=False)
 
 app.add_middleware(
     CORSMiddleware,

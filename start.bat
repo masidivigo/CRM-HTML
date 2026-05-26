@@ -1,4 +1,5 @@
 @echo off
+setlocal enabledelayedexpansion
 title Ecotrentino CRM
 cd /d "%~dp0"
 echo.
@@ -12,6 +13,19 @@ if errorlevel 1 (
     echo [ERRORE] Python non trovato. Installalo da https://www.python.org/
     pause
     exit /b 1
+)
+
+rem === BACKUP AUTOMATICO ===
+if exist crm.db (
+    if not exist backups mkdir backups
+    for /f %%I in ('powershell -NoProfile -Command "Get-Date -Format yyyy-MM-dd"') do set BACKUP_DATE=%%I
+    copy /y crm.db "backups\crm_backup_!BACKUP_DATE!.db" >nul
+    echo  [Backup] Creato: crm_backup_!BACKUP_DATE!.db
+    set _CNT=0
+    for /f "delims=" %%F in ('dir /b /o-d "backups\crm_backup_*.db" 2^>nul') do (
+        set /a _CNT+=1
+        if !_CNT! gtr 7 del "backups\%%F" >nul 2>&1
+    )
 )
 
 if not exist "venv\Scripts\activate.bat" (

@@ -10,12 +10,34 @@ router = APIRouter()
 
 DB_FIELDS = [
     "ragione_sociale", "partita_iva", "indirizzo", "citta",
-    "provincia", "regione", "codice_ateco", "tipo", "note"
+    "provincia", "regione", "codice_ateco", "tipo", "note",
+    "email_aziendale", "telefono_aziendale", "website",
+    "attivita_descrizione", "prodotto_interesse", "fonte_lead",
 ]
 
 
+def _read_xlsx(content: bytes) -> list[dict]:
+    import openpyxl
+    wb = openpyxl.load_workbook(io.BytesIO(content), read_only=True, data_only=True)
+    ws = wb.active
+    rows = list(ws.iter_rows(values_only=True))
+    wb.close()
+    if not rows:
+        return []
+    headers = [
+        str(h).strip() if h is not None else f"col_{i}"
+        for i, h in enumerate(rows[0])
+    ]
+    result = []
+    for row in rows[1:]:
+        if all(v is None for v in row):
+            continue
+        d = {h: (str(v).strip() if v is not None else "") for h, v in zip(headers, row)}
+        result.append(d)
+    return result
+
+
 def _detect(content: bytes) -> tuple[str, str]:
-    """Return (decoded_text, delimiter) trying encodings then delimiter candidates."""
     for enc in ("utf-8-sig", "utf-8", "latin-1", "cp1252"):
         try:
             text = content.decode(enc)
@@ -36,32 +58,33 @@ def _detect(content: bytes) -> tuple[str, str]:
 @router.post("/preview")
 async def preview_csv(file: UploadFile = File(...)):
     content = await file.read()
-    text, delim = _detect(content)
+    filename = (file.filename or "").lower()
 
-    reader = csv.DictReader(io.StringIO(text), delimiter=delim)
+    if filename.endswith(".xlsx"):
+        all_rows = _read_xlsx(content)
+        rows = all_rows[:6]
+        columns = list(rows[0].keys()) if rows else []
+    else:
+        text, delim = _detect(content)
+        reader = csv.DictReader(io.StringIO(text), delimiter=delim)
+        rows = []
+        for i, row in enumerate(reader):
+            if i >= 6:
+                break
+            rows.append({k.strip(): v.strip() for k, v in row.items()})
+        columns = list(rows[0].keys()) if rows else []
 
-    rows = []
-    for i, row in enumerate(reader):
-        if i >= 6:
-            break
-        rows.append({k.strip(): v.strip() for k, v in row.items()})
-
-    columns = list(rows[0].keys()) if rows else []
-    return {
-        "columns": columns,
-        "preview": rows,
-        "db_fields": DB_FIELDS,
-    }
+    return {"columns": columns, "preview": rows, "db_fields": DB_FIELDS}
 
 
 @router.post("/execute")
 async def execute_import(
     file: UploadFile = File(...),
-    mapping: str = Form(...),  # JSON: {"ragione_sociale": "Nome Azienda", ...}
+    mapping: str = Form(...),
     db: Session = Depends(get_db),
 ):
     content = await file.read()
-    text, delim = _detect(content)
+    filename = (file.filename or "").lower()
 
     try:
         mapping_dict: dict = json.loads(mapping)
@@ -71,13 +94,23 @@ async def execute_import(
     if "ragione_sociale" not in mapping_dict:
         raise HTTPException(400, "Il campo 'ragione_sociale' è obbligatorio nel mapping")
 
-    reader = csv.DictReader(io.StringIO(text), delimiter=delim)
+    if filename.endswith(".xlsx"):
+        all_rows = _read_xlsx(content)
+    else:
+        text, delim = _detect(content)
+        all_rows = [
+            {k.strip(): (v.strip() if v else "") for k, v in row.items()}
+            for row in csv.DictReader(io.StringIO(text), delimiter=delim)
+        ]
+
+    if not all_rows:
+        raise HTTPException(400, "Il file è vuoto o privo di righe dati.")
+
     imported = 0
     skipped = 0
     errors = []
 
-    for i, row in enumerate(reader, 1):
-        row = {k.strip(): (v.strip() if v else "") for k, v in row.items()}
+    for i, row in enumerate(all_rows, 1):
         try:
             data = {}
             for db_field, csv_col in mapping_dict.items():
@@ -90,7 +123,6 @@ async def execute_import(
                 skipped += 1
                 continue
 
-            # Skip duplicates by ragione_sociale
             exists = db.query(models.Azienda).filter(
                 models.Azienda.ragione_sociale == rs
             ).first()

@@ -32,7 +32,7 @@ def _row(o: models.Opportunita) -> dict:
     }
 
 
-@router.get("/")
+@router.get("")
 def list_opportunita(
     stato: Optional[str] = Query(None),
     id_azienda: Optional[int] = Query(None),
@@ -54,7 +54,7 @@ def list_opportunita(
     return [_row(o) for o in q.order_by(models.Opportunita.created_at.desc()).offset(skip).limit(limit)]
 
 
-@router.post("/", status_code=201)
+@router.post("", status_code=201)
 def create_opportunita(data: schemas.OpportunitaCreate, db: Session = Depends(get_db)):
     if not db.query(models.Azienda).filter(models.Azienda.id == data.id_azienda).first():
         raise HTTPException(404, "Azienda non trovata")

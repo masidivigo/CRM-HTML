@@ -36,7 +36,7 @@ def _row(a: models.Azienda) -> dict:
     }
 
 
-@router.get("/")
+@router.get("")
 def list_aziende(
     search: Optional[str] = Query(None),
     provincia: Optional[str] = Query(None),
@@ -66,7 +66,7 @@ def list_aziende(
     return {"data": data, "total": total}
 
 
-@router.post("/", status_code=201)
+@router.post("", status_code=201)
 def create_azienda(data: schemas.AziendaCreate, db: Session = Depends(get_db)):
     obj = models.Azienda(**data.model_dump())
     db.add(obj)
