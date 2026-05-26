@@ -1,8 +1,37 @@
+# Ambiente virtuale
+venv/
+env/
+.env/
+.venv/
+
+# Cache Python
 __pycache__/
 *.pyc
 *.pyo
+*.pyd
+
+# File di configurazione con segreti
 .env
-venv/
-.venv/
+*.env.local
+
+# File di sistema
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Claude Code
+.claude/
+
+# Distribuzione
+dist/
+build/
+*.egg-info/
+
+# Backup e log locali
 backups/
 server.log
