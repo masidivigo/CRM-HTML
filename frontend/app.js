@@ -398,6 +398,19 @@ async function openAziendaModal(id=null){
   document.getElementById('modal-title').textContent = isEdit ? 'Modifica Azienda' : 'Nuova Azienda';
   document.getElementById('modal-body').innerHTML = `
     <div class="grid grid-cols-1 gap-4">
+      ${!isEdit ? `
+      <div class="bg-eco-50 border border-eco-200 rounded-lg p-4 -mt-1">
+        <label class="label text-eco-700">Estrazione automatica da sito web</label>
+        <div class="flex gap-2 mt-1">
+          <input id="f-scrape-url" class="input flex-1" type="url" placeholder="https://www.azienda.it" />
+          <button type="button" onclick="estraiDatiAzienda()" class="px-4 py-2 bg-eco-600 hover:bg-eco-700 active:bg-eco-800 text-white text-sm font-semibold rounded-lg transition-colors whitespace-nowrap flex items-center gap-2">
+            <span id="scrape-icon">🔍</span>
+            <span id="scrape-text">Estrai dati</span>
+          </button>
+        </div>
+        <p class="text-xs text-eco-600 mt-2">Inserisci l'URL del sito aziendale per compilare automaticamente i campi</p>
+      </div>
+      ` : ''}
       <div class="grid grid-cols-2 gap-4">
         <div class="col-span-2">
           <label class="label">Ragione Sociale *</label>
@@ -529,6 +542,61 @@ async function deleteAzienda(id){
   await API.del(`/api/aziende/${id}`);
   toast('Azienda eliminata');
   loadAziende(); loadAziendeDropdowns();
+}
+
+async function estraiDatiAzienda(){
+  const urlInput = document.getElementById('f-scrape-url');
+  const url = (urlInput?.value||'').trim();
+  if(!url){ toast('Inserisci un URL valido','error'); return; }
+
+  const iconEl = document.getElementById('scrape-icon');
+  const textEl = document.getElementById('scrape-text');
+  const origIcon = iconEl.textContent;
+  const origText = textEl.textContent;
+
+  iconEl.innerHTML = '<svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>';
+  textEl.textContent = 'Analisi...';
+
+  try{
+    const data = await API.post('/api/scraper/estrai', {url});
+
+    const fieldMap = {
+      ragione_sociale: 'f-ragione_sociale',
+      indirizzo: 'f-indirizzo',
+      citta: 'f-citta',
+      provincia: 'f-provincia',
+      regione: 'f-regione',
+      telefono_aziendale: 'f-telefono_aziendale',
+      email_aziendale: 'f-email_aziendale',
+      website: 'f-website',
+      codice_ateco: 'f-codice_ateco',
+      attivita_descrizione: 'f-attivita_descrizione',
+      prodotto_interesse: 'f-prodotto_interesse',
+    };
+
+    let filled = 0;
+    for(const [key, fieldId] of Object.entries(fieldMap)){
+      const el = document.getElementById(fieldId);
+      if(el && data[key]){
+        el.value = data[key];
+        el.classList.add('ring-2', 'ring-eco-400', 'bg-eco-50');
+        filled++;
+      }
+    }
+
+    if(filled > 0){
+      toast(`Dati estratti (${filled} campi) — verifica e salva`);
+      _debouncedCheckDup();
+    } else {
+      toast('Nessun dato utile trovato','error');
+    }
+
+  }catch(e){
+    toast(e.message || 'Impossibile estrarre dati — compila manualmente','error');
+  }finally{
+    iconEl.textContent = origIcon;
+    textEl.textContent = origText;
+  }
 }
 
 // ═══════════════ SCHEDA AZIENDA (sola lettura) ═══════════════

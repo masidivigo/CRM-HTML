@@ -10,7 +10,7 @@ from fastapi.staticfiles import StaticFiles
 
 from database import engine
 import models
-from routers import aziende, attivita, contatti, dashboard, import_csv, opportunita
+from routers import aziende, attivita, contatti, dashboard, import_csv, opportunita, scraper
 
 models.Base.metadata.create_all(bind=engine)
 
@@ -30,6 +30,7 @@ app.include_router(opportunita.router, prefix="/api/opportunita", tags=["opportu
 app.include_router(attivita.router,   prefix="/api/attivita",   tags=["attivita"])
 app.include_router(dashboard.router,  prefix="/api/dashboard",  tags=["dashboard"])
 app.include_router(import_csv.router, prefix="/api/import",     tags=["import"])
+app.include_router(scraper.router,    prefix="/api/scraper",    tags=["scraper"])
 
 app.mount("/static", StaticFiles(directory="frontend"), name="static")
 
