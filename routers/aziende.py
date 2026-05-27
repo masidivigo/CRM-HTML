@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Body, Depends, HTTPException, Query
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 from typing import Optional, List
 from pydantic import BaseModel
 import models
@@ -62,6 +62,7 @@ def list_aziende(
     if etichetta:
         q = q.filter(models.Azienda.etichetta == etichetta)
     total = q.count()
+    q = q.options(selectinload(models.Azienda.contatti), selectinload(models.Azienda.opportunita))
     data = [_row(a) for a in q.order_by(models.Azienda.ragione_sociale).offset(skip).limit(limit)]
     return {"data": data, "total": total}
 

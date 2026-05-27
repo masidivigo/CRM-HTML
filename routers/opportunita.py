@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 from typing import Optional
 import models
 import schemas
@@ -51,6 +51,7 @@ def list_opportunita(
         q = q.filter(models.Opportunita.id_contatto == id_contatto)
     if search:
         q = q.filter(models.Opportunita.titolo.ilike(f"%{search}%"))
+    q = q.options(selectinload(models.Opportunita.azienda), selectinload(models.Opportunita.contatto), selectinload(models.Opportunita.attivita))
     return [_row(o) for o in q.order_by(models.Opportunita.created_at.desc()).offset(skip).limit(limit)]
 
 

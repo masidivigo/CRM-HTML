@@ -11,26 +11,26 @@ class Azienda(Base):
     partita_iva = Column(String(11))
     indirizzo = Column(String(255))
     citta = Column(String(100))
-    provincia = Column(String(2))
-    regione = Column(String(50))
+    provincia = Column(String(2), index=True)
+    regione = Column(String(50), index=True)
     codice_ateco = Column(String(20))
-    tipo = Column(String(50))
+    tipo = Column(String(50), index=True)
     email_aziendale = Column(String(255))
     telefono_aziendale = Column(String(20))
     website = Column(Text)
     note = Column(Text)
     attivita_descrizione = Column(String(255))
     prodotto_interesse = Column(String(255))
-    fonte_lead = Column(String(50))
+    fonte_lead = Column(String(50), index=True)
     ordine = Column(Boolean, default=False)
     commessa_euro = Column(Float)
-    etichetta = Column(String(20))
+    etichetta = Column(String(20), index=True)
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, onupdate=func.now())
 
     contatti = relationship("Contatto", back_populates="azienda", cascade="all, delete-orphan")
     opportunita = relationship("Opportunita", back_populates="azienda", cascade="all, delete-orphan")
-    attivita = relationship("Attivita", back_populates="azienda")
+    attivita = relationship("Attivita", back_populates="azienda", cascade="all, delete-orphan")
 
 
 class Contatto(Base):
@@ -57,11 +57,11 @@ class Opportunita(Base):
     id_azienda = Column(Integer, ForeignKey("aziende.id"), nullable=False)
     id_contatto = Column(Integer, ForeignKey("contatti.id"), nullable=True)
     titolo = Column(String(255), nullable=False)
-    stato = Column(String(50), default="freddo")
+    stato = Column(String(50), default="freddo", index=True)
     valore_stimato = Column(Float)
     data_primo_contatto = Column(DateTime)
     data_ultimo_contatto = Column(DateTime)
-    prossimo_followup = Column(Date)
+    prossimo_followup = Column(Date, index=True)
     offerte_collegate = Column(String(255))
     note = Column(Text)
     created_at = Column(DateTime, server_default=func.now())
@@ -69,7 +69,7 @@ class Opportunita(Base):
 
     azienda = relationship("Azienda", back_populates="opportunita")
     contatto = relationship("Contatto", back_populates="opportunita")
-    attivita = relationship("Attivita", back_populates="opportunita")
+    attivita = relationship("Attivita", back_populates="opportunita", cascade="all, delete-orphan")
 
 
 class Attivita(Base):

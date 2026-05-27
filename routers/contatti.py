@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import or_
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 from typing import Optional
 import models
 import schemas
@@ -44,6 +44,7 @@ def list_contatti(
                 models.Contatto.email.ilike(f"%{search}%"),
             )
         )
+    q = q.options(selectinload(models.Contatto.azienda))
     return [_row(c) for c in q.order_by(models.Contatto.cognome).offset(skip).limit(limit)]
 
 
