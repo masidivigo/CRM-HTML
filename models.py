@@ -38,8 +38,8 @@ class Contatto(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     id_azienda = Column(Integer, ForeignKey("aziende.id"), nullable=False)
-    nome = Column(String(100), nullable=False)
-    cognome = Column(String(100), nullable=False)
+    nome = Column(String(100), nullable=True)
+    cognome = Column(String(100), nullable=True)
     ruolo = Column(String(100))
     telefono = Column(String(20))
     email = Column(String(255))

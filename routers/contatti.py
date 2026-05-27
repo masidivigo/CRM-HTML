@@ -10,12 +10,15 @@ router = APIRouter()
 
 
 def _row(c: models.Contatto) -> dict:
+    nome = c.nome or ""
+    cognome = c.cognome or ""
+    nome_completo = f"{nome} {cognome}".strip() or "—"
     return {
         "id": c.id,
         "id_azienda": c.id_azienda,
         "nome": c.nome,
         "cognome": c.cognome,
-        "nome_completo": f"{c.nome} {c.cognome}",
+        "nome_completo": nome_completo,
         "ruolo": c.ruolo,
         "telefono": c.telefono,
         "email": c.email,
@@ -50,6 +53,8 @@ def list_contatti(
 
 @router.post("", status_code=201)
 def create_contatto(data: schemas.ContattoCreate, db: Session = Depends(get_db)):
+    if not data.nome and not data.cognome:
+        raise HTTPException(400, "Inserire almeno nome o cognome")
     if not db.query(models.Azienda).filter(models.Azienda.id == data.id_azienda).first():
         raise HTTPException(404, "Azienda non trovata")
     obj = models.Contatto(**data.model_dump())

@@ -51,8 +51,8 @@ class AziendaUpdate(BaseModel):
 
 class ContattoCreate(BaseModel):
     id_azienda: int
-    nome: str
-    cognome: str
+    nome: Optional[str] = None
+    cognome: Optional[str] = None
     ruolo: Optional[str] = None
     telefono: Optional[str] = None
     email: Optional[str] = None

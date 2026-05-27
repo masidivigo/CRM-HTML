@@ -1098,12 +1098,12 @@ async function openContattoModal(id=null){
   document.getElementById('modal-body').innerHTML = `
     <div class="grid grid-cols-2 gap-4">
       <div>
-        <label class="label">Nome *</label>
-        <input id="f-nome" class="input" value="${esc(data.nome||'')}" />
+        <label class="label">Nome</label>
+        <input id="f-nome" class="input" value="${esc(data.nome||'')}" placeholder="Almeno nome o cognome" />
       </div>
       <div>
-        <label class="label">Cognome *</label>
-        <input id="f-cognome" class="input" value="${esc(data.cognome||'')}" />
+        <label class="label">Cognome</label>
+        <input id="f-cognome" class="input" value="${esc(data.cognome||'')}" placeholder="Almeno nome o cognome" />
       </div>
       <div class="col-span-2">
         <label class="label">Azienda *</label>
@@ -1139,7 +1139,7 @@ async function openContattoModal(id=null){
         email:      gv('f-email')||null,
         note:       gv('f-note')||null,
       };
-      if(!payload.nome||!payload.cognome){ toast('Nome e cognome obbligatori','error'); return false; }
+      if(!payload.nome && !payload.cognome){ toast('Inserire almeno nome o cognome','error'); return false; }
       if(!payload.id_azienda){ toast('Seleziona un\'azienda','error'); return false; }
       if(isEdit) await API.put(`/api/contatti/${id}`, payload);
       else await API.post('/api/contatti', payload);
